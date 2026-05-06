@@ -243,9 +243,9 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = '2.2.0';
+const APP_VERSION = '2.3.0';
 function getApiUrl() {
-  return localStorage.getItem('workerUrl') || 'https://api.anthropic.com/v1/messages';
+  return localStorage.getItem('workerUrl') || '';
 }
 let currentTab = 'text';
 let currentImageBase64 = null;
@@ -333,10 +333,19 @@ async function doTranslate() {
   const btn = document.getElementById('translateBtn');
   btn.classList.add('loading');
   btn.innerHTML = '<span class="spinner"></span> 翻譯中…';
-  document.getElementById('resultCard').classList.remove('show');
+
+  const apiUrl = getApiUrl();
+  const debugInfo = `v${APP_VERSION}\nURL: ${apiUrl||'(未設定)'}\nKey: ${key.slice(0,14)}...(${key.length}字)`;
+  showTextResult(debugInfo, '');
+
+  if (!apiUrl) {
+    showTextResult('❌ 請先在設定中填入 Worker 網址', '');
+    btn.classList.remove('loading');
+    btn.innerHTML='<i class="ti ti-language"></i> 立即翻譯';
+    return;
+  }
 
   try {
-    const apiUrl = getApiUrl();
     const isWorker = !apiUrl.includes('anthropic.com/v1');
     const headers = {'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'};
     if (!isWorker) headers['anthropic-dangerous-direct-browser-access'] = 'true';
@@ -350,7 +359,7 @@ async function doTranslate() {
     });
     if (!res.ok) {
       const errBody = await res.text();
-      throw new Error('HTTP '+res.status+'\n'+errBody.slice(0,300));
+      throw new Error('HTTP '+res.status+' — '+errBody.slice(0,300));
     }
     const data = await res.json();
     const parsed = JSON.parse((data.content||[]).map(b=>b.text||'').join('').replace(/```json|```/g,'').trim());
