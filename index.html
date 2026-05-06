@@ -144,6 +144,8 @@
   <button class="tab" onclick="switchTab('currency',this)">匯率</button>
   <button class="tab" onclick="switchTab('itinerary',this)">行程</button>
   <button class="tab" onclick="switchTab('links',this)">連結</button>
+  <button class="tab" onclick="switchTab('coupon',this)">優惠券</button>
+  <button class="tab" onclick="switchTab('photos',this)">圖片</button>
   <button class="tab" onclick="switchTab('memo',this)">備忘錄</button>
   <button class="tab" onclick="switchTab('history',this)">紀錄</button>
 </div>
@@ -288,6 +290,16 @@
     <div id="linksContainer"></div>
   </div>
 
+  <div id="tab-coupon" style="display:none">
+    <div class="section-label" style="margin-top:4px">旅遊優惠券</div>
+    <div id="couponList"></div>
+  </div>
+
+  <div id="tab-photos" style="display:none">
+    <div class="section-label" style="margin-top:4px">行程參考圖片</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="photoGrid"></div>
+  </div>
+
   <div id="tab-memo" style="display:none">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px;margin-bottom:12px">
       <div class="section-label" style="margin:0">清單</div>
@@ -370,6 +382,12 @@
   <button class="nav-item" id="nav-links" onclick="switchTab('links',null,'nav-links')">
     <i class="ti ti-link"></i><span>連結</span>
   </button>
+  <button class="nav-item" id="nav-coupon" onclick="switchTab('coupon',null,'nav-coupon')">
+    <i class="ti ti-ticket"></i><span>優惠券</span>
+  </button>
+  <button class="nav-item" id="nav-photos" onclick="switchTab('photos',null,'nav-photos')">
+    <i class="ti ti-photo"></i><span>圖片</span>
+  </button>
   <button class="nav-item" id="nav-memo" onclick="switchTab('memo',null,'nav-memo')">
     <i class="ti ti-checklist"></i><span>備忘錄</span>
   </button>
@@ -381,8 +399,8 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = '3.2.1';
-const TABS = ['text','image','phrase','currency','itinerary','links','memo','history'];
+const APP_VERSION = '3.5.0';
+const TABS = ['text','image','phrase','currency','itinerary','links','coupon','photos','memo','history'];
 function getApiUrl() { return localStorage.getItem('workerUrl') || ''; }
 
 function switchTab(tab, tabEl, navId) {
@@ -397,6 +415,8 @@ function switchTab(tab, tabEl, navId) {
   if (tab==='phrase') renderPhrases();
   if (tab==='memo') renderMemo();
   if (tab==='links') renderLinks();
+  if (tab==='coupon') renderCoupon();
+  if (tab==='photos') renderPhotos();
 }
 let currentTab = 'text';
 let currentImageBase64 = null;
@@ -1196,6 +1216,160 @@ function renderMemo() {
 document.addEventListener('DOMContentLoaded', () => {
   renderMemo();
 });
+
+// ── 優惠券 ──
+const COUPONS = [
+  {
+    name: 'LikeJapan APP',
+    icon: '📱',
+    discount: '多家店折扣',
+    validity: '各店不同',
+    how: '出發前下載 LikeJapan APP，在店內結帳時開啟 APP 給店員掃碼即可',
+    url: 'https://app.likejapan.com/',
+    urlText: '下載 LikeJapan APP',
+    note: '含唐吉訶德、Welcia、大國藥妝等多家店折扣券',
+  },
+  {
+    name: '唐吉訶德（Donki）',
+    icon: '🎪',
+    discount: '免稅10% + 滿¥1萬再7%OFF',
+    validity: '長期有效',
+    how: '在 LikeJapan APP 內開啟唐吉訶德優惠券，結帳時出示給店員掃碼。需持護照免稅結帳。滿¥10,000（未稅）可用5%，滿¥30,000可用7%',
+    url: 'https://app.likejapan.com/',
+    urlText: '開啟優惠券',
+    note: '煙酒、POSA卡不適用',
+  },
+  {
+    name: 'Bic Camera',
+    icon: '🔌',
+    discount: '電器免稅10%+7%、藥妝免稅10%+5%',
+    validity: '至 2026/8/31',
+    how: '在 LikeJapan APP 內開啟 Bic Camera 優惠券，結帳時出示給店員掃碼，並出示護照享免稅',
+    url: 'https://www.biccamera.com/bc/c/info/tourist/index.jsp',
+    urlText: 'Bic Camera 優惠頁',
+    note: '行程第三天東京車站有樂町店、第六天新宿東口店都有分店',
+  },
+  {
+    name: 'Welcia 藥妝',
+    icon: '💊',
+    discount: '免稅10% + 滿¥5萬再8%OFF',
+    validity: '至 2026/9/30',
+    how: '在 LikeJapan APP 開啟 Welcia 優惠券，結帳免稅時出示給店員。需為持短期滯留簽證的外國遊客',
+    url: 'https://app.likejapan.com/',
+    urlText: '開啟優惠券',
+    note: '滿¥1萬 3%OFF、滿¥3萬 5%OFF、滿¥5萬 8%OFF',
+  },
+  {
+    name: 'NINJA WiFi',
+    icon: '📡',
+    discount: 'WiFi蛋/eSIM 八折',
+    validity: '長期有效',
+    how: '在 NINJA WiFi 官網預訂時輸入優惠碼 likeni1212 享八折。eSIM 同樣適用，SHOGUN SIM 享九折',
+    url: 'https://www.ninjawifi.com/',
+    urlText: 'NINJA WiFi 官網',
+    note: '出發前先預訂，機場領取或郵寄到府',
+  },
+  {
+    name: '大國藥妝（線上）',
+    icon: '🛒',
+    discount: '滿¥1萬減¥1,200',
+    validity: '至 2026/12/31',
+    how: '在大國藥妝官方全球旗艦店線上購物，購物車內點「選擇優惠券」，輸入折扣碼 LJXDK2026',
+    url: 'https://www.daikokudrug.com/',
+    urlText: '大國藥妝線上店',
+    note: '單筆不累計，無法與其他券併用。可直送台灣',
+  },
+];
+
+function renderCoupon() {
+  const el = document.getElementById('couponList');
+  if (!el) return;
+  el.innerHTML = COUPONS.map(c => `
+    <div style="background:var(--surface);border:0.5px solid var(--border2);border-radius:var(--radius);margin-bottom:12px;overflow:hidden">
+      <div style="padding:12px 14px;border-bottom:0.5px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <span style="font-size:20px">${c.icon}</span>
+          <div style="flex:1">
+            <div style="font-size:15px;font-weight:600;color:var(--text)">${escHtml(c.name)}</div>
+            <div style="font-size:12px;color:var(--accent);margin-top:2px">${escHtml(c.discount)}</div>
+          </div>
+          <span style="font-size:10px;color:var(--text3);white-space:nowrap">${escHtml(c.validity)}</span>
+        </div>
+      </div>
+      <div style="padding:10px 14px">
+        <div style="font-size:11px;font-weight:600;color:var(--text2);letter-spacing:0.05em;margin-bottom:4px">使用方式</div>
+        <div style="font-size:13px;color:var(--text);line-height:1.6;margin-bottom:8px">${escHtml(c.how)}</div>
+        ${c.note ? `<div style="font-size:12px;color:var(--text2);background:var(--surface2);border-radius:var(--radius-sm);padding:6px 10px;margin-bottom:8px">⚠️ ${escHtml(c.note)}</div>` : ''}
+        <a href="${escHtml(c.url)}" target="_blank" rel="noopener"
+          style="display:flex;align-items:center;justify-content:center;gap:6px;padding:9px;
+          background:var(--surface2);border:0.5px solid var(--border2);border-radius:var(--radius-sm);
+          color:var(--accent);font-size:13px;font-weight:500;text-decoration:none">
+          <i class="ti ti-external-link" style="font-size:14px" aria-hidden="true"></i>
+          ${escHtml(c.urlText)}
+        </a>
+      </div>
+    </div>`).join('');
+}
+
+// ── 行程圖片 ──
+const BASE = 'https://song-yen-wei.github.io/translate-app/images/';
+const PHOTOS = [
+  { file: 'img_01_row23_col1.png', title: '行程圖 1' },
+  { file: 'img_02_row40_col0.png', title: '行程圖 2' },
+  { file: 'img_03_row59_col1.png', title: '行程圖 3' },
+  { file: 'img_04_row72_col0.png', title: '行程圖 4' },
+  { file: 'img_05_row92_col0.png', title: '行程圖 5' },
+  { file: 'img_06_row125_col0.png', title: '行程圖 6' },
+  { file: 'img_07_row24_col5.png', title: '行程圖 7' },
+  { file: 'img_08_row44_col5.png', title: '行程圖 8' },
+  { file: 'img_09_row125_col3.png', title: '行程圖 9' },
+  { file: 'img_10_row161_col3.png', title: '行程圖 10' },
+  { file: 'img_11_row59_col4.png', title: '行程圖 11' },
+  { file: 'img_12_row0_col0.png', title: '行程圖 12' },
+  { file: 'img_13_row187_col3.png', title: '行程圖 13' },
+  { file: 'img_14_row82_col4.png', title: '行程圖 14' },
+  { file: 'img_15_row0_col3.png', title: '行程圖 15' },
+];
+
+let lightboxOpen = false;
+
+function renderPhotos() {
+  const el = document.getElementById('photoGrid');
+  if (!el) return;
+  el.innerHTML = PHOTOS.map((p, i) => `
+    <div onclick="openLightbox(${i})" style="cursor:pointer;border-radius:var(--radius-sm);overflow:hidden;background:var(--surface);border:0.5px solid var(--border2)">
+      <img src="${BASE}${p.file}" alt="${escHtml(p.title)}"
+        style="width:100%;height:100px;object-fit:cover;display:block"
+        onerror="this.parentElement.style.display='none'">
+    </div>`).join('');
+  // Create lightbox if not exists
+  if (!document.getElementById('lightbox')) {
+    const lb = document.createElement('div');
+    lb.id = 'lightbox';
+    lb.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;flex-direction:column;align-items:center;justify-content:center';
+    lb.innerHTML = `
+      <button onclick="closeLightbox()" style="position:absolute;top:16px;right:16px;background:none;border:none;color:#fff;font-size:28px;cursor:pointer;z-index:1">✕</button>
+      <button onclick="lbPrev()" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,0.1);border:none;color:#fff;font-size:24px;width:40px;height:40px;border-radius:50%;cursor:pointer">‹</button>
+      <img id="lbImg" style="max-width:92vw;max-height:80vh;object-fit:contain;border-radius:8px">
+      <div id="lbTitle" style="color:#fff;font-size:13px;margin-top:10px;opacity:0.7"></div>
+      <button onclick="lbNext()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,0.1);border:none;color:#fff;font-size:24px;width:40px;height:40px;border-radius:50%;cursor:pointer">›</button>`;
+    document.body.appendChild(lb);
+  }
+}
+
+let lbIndex = 0;
+function openLightbox(i) {
+  lbIndex = i;
+  document.getElementById('lightbox').style.display = 'flex';
+  updateLightbox();
+}
+function closeLightbox() { document.getElementById('lightbox').style.display = 'none'; }
+function lbPrev() { lbIndex = (lbIndex - 1 + PHOTOS.length) % PHOTOS.length; updateLightbox(); }
+function lbNext() { lbIndex = (lbIndex + 1) % PHOTOS.length; updateLightbox(); }
+function updateLightbox() {
+  document.getElementById('lbImg').src = BASE + PHOTOS[lbIndex].file;
+  document.getElementById('lbTitle').textContent = PHOTOS[lbIndex].title + ` (${lbIndex+1}/${PHOTOS.length})`;
+}
 </script>
 </body>
 </html>
