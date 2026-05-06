@@ -243,7 +243,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = '2.3.0';
+const APP_VERSION = '2.4.0';
 function getApiUrl() {
   return localStorage.getItem('workerUrl') || '';
 }
@@ -353,7 +353,7 @@ async function doTranslate() {
       method:'POST',
       headers,
       body: JSON.stringify({
-        model:'claude-sonnet-4-20250514', max_tokens:1000,
+        model:'claude-sonnet-4-5', max_tokens:1000,
         messages:[{role:'user',content:`你是專業的日中翻譯員，請將以下日文翻譯成自然流暢的繁體中文。\n只回傳 JSON（不含 markdown 代碼框），格式：\n{"translation":"翻譯結果","note":"語氣或文化補充，若無則空字串"}\n\n日文：${input}`}]
       })
     });
@@ -432,7 +432,7 @@ async function doImageTranslate() {
       method:'POST',
       headers,
       body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',max_tokens:1500,
+        model:'claude-sonnet-4-5',max_tokens:1500,
         messages:[{role:'user',content:[
           {type:'image',source:{type:'base64',media_type:currentImageMime,data:currentImageBase64}},
           {type:'text',text:'請辨識圖片中所有日文文字，並翻譯成繁體中文。\n只回傳 JSON（不含 markdown 代碼框）：\n{"original":"原始日文（若有多行用 \\n 分隔）","translation":"對應的繁體中文翻譯","note":"若有特別說明如菜單、路牌等背景"}'}
