@@ -303,28 +303,58 @@ document.head.appendChild(link);
   }
 
   /* ── Image section ── */
-  .image-upload-area {
+  .img-btn-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .img-source-btn {
+    background: var(--surface);
     border: 1.5px dashed var(--border2);
     border-radius: var(--radius);
-    padding: 28px 16px;
-    text-align: center;
+    padding: 22px 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
     cursor: pointer;
-    margin-bottom: 12px;
-    transition: border-color 0.15s;
-    background: var(--surface);
+    transition: border-color 0.15s, background 0.15s;
   }
-  .image-upload-area:active { border-color: var(--accent); }
-  .upload-icon { font-size: 36px; color: var(--accent2); margin-bottom: 8px; }
-  .upload-title { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
-  .upload-sub { font-size: 13px; color: var(--text2); }
+  .img-source-btn:active { border-color: var(--accent); background: var(--surface2); }
+  .img-source-btn i { font-size: 30px; color: var(--accent2); }
+  .img-source-btn span { font-size: 13px; font-weight: 600; color: var(--text); }
+  .img-source-btn small { font-size: 11px; color: var(--text2); text-align: center; }
   #fileInput { display: none; }
+  #cameraInput { display: none; }
+  .preview-wrap {
+    position: relative;
+    margin-bottom: 12px;
+    display: none;
+  }
+  .preview-wrap.show { display: block; }
   .preview-img {
     width: 100%;
     border-radius: var(--radius);
-    margin-bottom: 12px;
-    display: none;
     max-height: 260px;
     object-fit: cover;
+    display: block;
+  }
+  .preview-retake {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(0,0,0,0.55);
+    border: 0.5px solid rgba(255,255,255,0.2);
+    border-radius: var(--radius-sm);
+    color: #fff;
+    font-size: 12px;
+    font-family: inherit;
+    padding: 6px 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
   }
 
   /* ── History ── */
@@ -553,15 +583,28 @@ document.head.appendChild(link);
 
   <!-- ── Image tab ── -->
   <div id="tab-image" style="display:none">
-    <input type="file" id="fileInput" accept="image/*" capture="environment" onchange="handleImageUpload(event)">
+    <input type="file" id="fileInput" accept="image/*" onchange="handleImageUpload(event)">
+    <input type="file" id="cameraInput" accept="image/*" capture="environment" onchange="handleImageUpload(event)">
 
-    <div class="image-upload-area" onclick="document.getElementById('fileInput').click()">
-      <div class="upload-icon"><i class="ti ti-camera-plus"></i></div>
-      <div class="upload-title">拍照或選取圖片</div>
-      <div class="upload-sub">菜單、路牌、包裝等日文皆可辨識</div>
+    <div class="img-btn-row" id="imgBtnRow">
+      <button class="img-source-btn" onclick="document.getElementById('cameraInput').click()">
+        <i class="ti ti-camera"></i>
+        <span>拍照</span>
+        <small>直接開啟相機</small>
+      </button>
+      <button class="img-source-btn" onclick="document.getElementById('fileInput').click()">
+        <i class="ti ti-photo"></i>
+        <span>從相簿選取</span>
+        <small>選取已拍好的圖片</small>
+      </button>
     </div>
 
-    <img id="previewImg" class="preview-img" alt="預覽">
+    <div class="preview-wrap" id="previewWrap">
+      <img id="previewImg" class="preview-img" alt="預覽">
+      <button class="preview-retake" onclick="resetImage()">
+        <i class="ti ti-refresh" style="font-size:13px"></i> 重新選取
+      </button>
+    </div>
 
     <button class="translate-btn" id="imgTranslateBtn" onclick="doImageTranslate()" style="display:none">
       <i class="ti ti-photo-scan"></i> 辨識並翻譯
@@ -793,14 +836,22 @@ function handleImageUpload(e) {
   reader.onload = ev => {
     const dataUrl = ev.target.result;
     currentImageBase64 = dataUrl.split(',')[1];
-    const img = document.getElementById('previewImg');
-    img.src = dataUrl;
-    img.style.display = 'block';
+    document.getElementById('previewImg').src = dataUrl;
+    document.getElementById('previewWrap').classList.add('show');
+    document.getElementById('imgBtnRow').style.display = 'none';
     document.getElementById('imgTranslateBtn').style.display = 'flex';
     document.getElementById('imgResultCard').classList.remove('show');
-    document.querySelector('.image-upload-area').style.display = 'none';
+    e.target.value = '';
   };
   reader.readAsDataURL(file);
+}
+function resetImage() {
+  currentImageBase64 = null;
+  document.getElementById('previewImg').src = '';
+  document.getElementById('previewWrap').classList.remove('show');
+  document.getElementById('imgBtnRow').style.display = 'grid';
+  document.getElementById('imgTranslateBtn').style.display = 'none';
+  document.getElementById('imgResultCard').classList.remove('show');
 }
 
 async function doImageTranslate() {
