@@ -98,6 +98,21 @@
   .update-banner-btn { background: rgba(255,255,255,0.2); border: none; color: #fff; font-size: 13px; font-weight: 600; padding: 6px 14px; border-radius: 99px; cursor: pointer; white-space: nowrap; font-family: inherit; }
   .spinner { width: 18px; height: 18px; border: 2px solid rgba(200,184,240,0.2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; }
   @keyframes spin { to { transform: rotate(360deg); } }
+  .memo-list { background: var(--surface); border: 0.5px solid var(--border2); border-radius: var(--radius); margin-bottom: 12px; overflow: hidden; }
+  .memo-list-header { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-bottom: 0.5px solid var(--border); }
+  .memo-list-title { flex: 1; font-size: 14px; font-weight: 600; color: var(--text); background: none; border: none; outline: none; font-family: inherit; caret-color: var(--accent); }
+  .memo-list-title::placeholder { color: var(--text3); }
+  .memo-progress { font-size: 11px; color: var(--text3); white-space: nowrap; }
+  .memo-item { display: flex; align-items: center; gap: 10px; padding: 9px 14px; }
+  .memo-check { width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--border2); flex-shrink: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; background: none; }
+  .memo-check.done { background: var(--accent); border-color: var(--accent); color: #1a1a2e; font-size: 12px; font-weight: 700; }
+  .memo-text { flex: 1; font-size: 14px; color: var(--text); background: none; border: none; outline: none; font-family: inherit; caret-color: var(--accent); }
+  .memo-text::placeholder { color: var(--text3); }
+  .memo-text.done-text { color: var(--text3); text-decoration: line-through; }
+  .memo-del { width: 28px; height: 28px; background: none; border: none; cursor: pointer; color: var(--text3); font-size: 14px; display: flex; align-items: center; justify-content: center; opacity: 0.5; }
+  .memo-del:active { opacity: 1; color: var(--danger); }
+  .memo-add-btn { width: 100%; padding: 9px; border: 0.5px dashed var(--border2); border-radius: var(--radius-sm); background: none; color: var(--text2); font-size: 13px; font-family: inherit; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; margin: 4px 14px 12px; width: calc(100% - 28px); }
+  .memo-list-del { width: 28px; height: 28px; background: none; border: none; cursor: pointer; color: var(--text3); font-size: 16px; display: flex; align-items: center; justify-content: center; }
 </style>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
 </head>
@@ -128,6 +143,7 @@
   <button class="tab" onclick="switchTab('phrase',this)">常用句</button>
   <button class="tab" onclick="switchTab('currency',this)">匯率</button>
   <button class="tab" onclick="switchTab('itinerary',this)">行程</button>
+  <button class="tab" onclick="switchTab('memo',this)">備忘錄</button>
   <button class="tab" onclick="switchTab('history',this)">紀錄</button>
 </div>
 
@@ -266,6 +282,29 @@
     </div>
   </div>
 
+  <div id="tab-memo" style="display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px;margin-bottom:12px">
+      <div class="section-label" style="margin:0">清單</div>
+      <div style="display:flex;gap:6px">
+        <button class="icon-btn" onclick="addMemoList('notes')" aria-label="新增注意事項" title="新增注意事項清單"><i class="ti ti-file-text"></i></button>
+        <button class="icon-btn" onclick="addMemoList('shop')" aria-label="新增購買清單" title="新增購買清單"><i class="ti ti-shopping-cart"></i></button>
+      </div>
+    </div>
+    <div id="memoListContainer"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
+      <button class="img-source-btn" onclick="addMemoList('notes')">
+        <i class="ti ti-file-text"></i>
+        <span>注意事項</span>
+        <small>新增清單</small>
+      </button>
+      <button class="img-source-btn" onclick="addMemoList('shop')">
+        <i class="ti ti-shopping-cart"></i>
+        <span>購買清單</span>
+        <small>新增清單</small>
+      </button>
+    </div>
+  </div>
+
   <div id="tab-history" style="display:none">
     <div class="section-label">翻譯紀錄</div>
     <div class="history-list" id="historyList"></div>
@@ -322,6 +361,9 @@
   <button class="nav-item" id="nav-itinerary" onclick="switchTab('itinerary',null,'nav-itinerary')">
     <i class="ti ti-calendar"></i><span>行程</span>
   </button>
+  <button class="nav-item" id="nav-memo" onclick="switchTab('memo',null,'nav-memo')">
+    <i class="ti ti-checklist"></i><span>備忘錄</span>
+  </button>
   <button class="nav-item" id="nav-history" onclick="switchTab('history',null,'nav-history')">
     <i class="ti ti-clock"></i><span>紀錄</span>
   </button>
@@ -330,8 +372,8 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = '2.9.0';
-const TABS = ['text','image','phrase','currency','itinerary','history'];
+const APP_VERSION = '3.1.0';
+const TABS = ['text','image','phrase','currency','itinerary','memo','history'];
 function getApiUrl() { return localStorage.getItem('workerUrl') || ''; }
 
 function switchTab(tab, tabEl, navId) {
@@ -344,6 +386,7 @@ function switchTab(tab, tabEl, navId) {
   if (tab==='history') renderHistory();
   if (tab==='currency' && !currentRate) fetchRate();
   if (tab==='phrase') renderPhrases();
+  if (tab==='memo') renderMemo();
 }
 let currentTab = 'text';
 let currentImageBase64 = null;
@@ -865,6 +908,204 @@ async function askItinerary() {
   btn.innerHTML = '<i class="ti ti-message-circle"></i> 詢問行程';
   btn.classList.remove('loading');
 }
+</script>
+<script>
+// ── 備忘錄 ──
+const DEFAULT_MEMO = [
+  {
+    id: 1000001, title: '🎫 東京優惠券清單', icon: '🎫', type: 'notes',
+    items: [
+      { id: 1000101, text: '【LikeJapan APP】出發前下載好，結帳時開 app 給店員掃碼', done: false },
+      { id: 1000102, text: '唐吉訶德 — 免稅10% + 滿¥1萬再7%OFF（澀谷/池袋）', done: false },
+      { id: 1000103, text: 'Bic Camera — 電器免稅10%+7%、藥妝免稅10%+5%（有效至2026/8/31）', done: false },
+      { id: 1000104, text: 'Welcia 藥妝 — 免稅10% + 滿¥5萬再8%OFF（有效至2026/9/30）', done: false },
+      { id: 1000105, text: 'NINJA WiFi — 優惠碼 likeni1212 享八折 / eSIM 同享八折', done: false },
+      { id: 1000106, text: '大國藥妝線上 — 折扣碼 LJXDK2026，滿¥1萬減¥1200（至2026/12/31）', done: false },
+    ]
+  },
+  {
+    id: 1000002, title: '✈️ 出發前注意事項', icon: '📝', type: 'notes',
+    items: [
+      { id: 1000201, text: '辦旅遊保險', done: false },
+      { id: 1000202, text: '填寫日本入境資料（Visit Japan Web）', done: false },
+      { id: 1000203, text: '確認網路方案（SIM卡/WiFi蛋）', done: false },
+      { id: 1000204, text: '確認飯店訂位', done: false },
+      { id: 1000205, text: '帶傘、鏡子、零錢包、牙刷', done: false },
+      { id: 1000206, text: '行動電源：需單獨裝夾鏈袋、輸出口封絕緣膠帶、160Wh以下', done: false },
+      { id: 1000207, text: '換日幣（建議機場或銀行）', done: false },
+    ]
+  },
+  {
+    id: 1000003, title: '🛒 日本必買清單', icon: '🛒', type: 'shop',
+    items: [
+      { id: 1000301, text: '711 馬卡龍冰淇淋 焙茶拿鐵', done: false },
+      { id: 1000302, text: '711 草莓卡式達鮮奶油三明治', done: false },
+      { id: 1000303, text: 'Lawson 可麗露 / 北海道生乳捲蛋糕', done: false },
+      { id: 1000304, text: '全家 生巧克力冰淇淋 / 貓咪軟糖', done: false },
+      { id: 1000305, text: 'HORINISHI 萬能調味粉（晴空塔 LIFE 超市）', done: false },
+      { id: 1000306, text: '馬路村 柚子醋（晴空塔 LIFE 超市）', done: false },
+      { id: 1000307, text: 'LeTAO THENOIR 紅茶巧克力夾心餅乾（成田機場免稅）', done: false },
+      { id: 1000308, text: '治一郎布丁（KITTE 丸の内店）', done: false },
+      { id: 1000309, text: '焦糖布蕾塔 Brulee Merize（Tokyo Gift Palette）', done: false },
+      { id: 1000310, text: '伴飯粉（淺草仲見世商店街雜貨店，只開到六點！）', done: false },
+      { id: 1000311, text: '妙義神社 貓咪御守', done: false },
+      { id: 1000312, text: '新宿東口の猫 廣告板拍照', done: false },
+    ]
+  }
+];
+
+let memoData = JSON.parse(localStorage.getItem('memoData') || 'null');
+if (memoData === null) {
+  memoData = DEFAULT_MEMO;
+  localStorage.setItem('memoData', JSON.stringify(memoData));
+}
+
+function saveMemo() {
+  localStorage.setItem('memoData', JSON.stringify(memoData));
+}
+
+function addMemoList(type) {
+  const id = Date.now();
+  const title = type === 'shop' ? '購買清單' : '注意事項';
+  const icon = type === 'shop' ? '🛒' : '📝';
+  memoData.push({ id, title, icon, type, items: [] });
+  saveMemo();
+  renderMemo();
+  // focus the new list title
+  setTimeout(() => {
+    const el = document.getElementById('memo-title-' + id);
+    if (el) { el.focus(); el.select(); }
+  }, 50);
+}
+
+function addMemoItem(listId) {
+  const list = memoData.find(l => l.id === listId);
+  if (!list) return;
+  const itemId = Date.now();
+  list.items.push({ id: itemId, text: '', done: false });
+  saveMemo();
+  renderMemo();
+  setTimeout(() => {
+    const el = document.getElementById('memo-item-' + itemId);
+    if (el) el.focus();
+  }, 50);
+}
+
+function toggleMemoItem(listId, itemId) {
+  const list = memoData.find(l => l.id === listId);
+  if (!list) return;
+  const item = list.items.find(i => i.id === itemId);
+  if (!item) return;
+  item.done = !item.done;
+  saveMemo();
+  renderMemo();
+}
+
+function updateMemoTitle(listId, val) {
+  const list = memoData.find(l => l.id === listId);
+  if (list) { list.title = val; saveMemo(); }
+  updateMemoProgress(listId);
+}
+
+function updateMemoItemText(listId, itemId, val) {
+  const list = memoData.find(l => l.id === listId);
+  if (!list) return;
+  const item = list.items.find(i => i.id === itemId);
+  if (item) { item.text = val; saveMemo(); }
+}
+
+function deleteMemoItem(listId, itemId) {
+  const list = memoData.find(l => l.id === listId);
+  if (!list) return;
+  list.items = list.items.filter(i => i.id !== itemId);
+  saveMemo();
+  renderMemo();
+}
+
+function deleteMemoList(listId) {
+  if (!confirm('確定刪除這個清單？')) return;
+  memoData = memoData.filter(l => l.id !== listId);
+  saveMemo();
+  renderMemo();
+}
+
+function updateMemoProgress(listId) {
+  const list = memoData.find(l => l.id === listId);
+  if (!list) return;
+  const el = document.getElementById('memo-prog-' + listId);
+  if (el && list.items.length > 0) {
+    const done = list.items.filter(i => i.done).length;
+    el.textContent = `${done}/${list.items.length}`;
+  } else if (el) {
+    el.textContent = '';
+  }
+}
+
+function memoItemKeydown(e, listId, itemId) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    addMemoItem(listId);
+  } else if (e.key === 'Backspace') {
+    const val = document.getElementById('memo-item-' + itemId).value;
+    if (val === '') {
+      e.preventDefault();
+      deleteMemoItem(listId, itemId);
+    }
+  }
+}
+
+function renderMemo() {
+  const container = document.getElementById('memoListContainer');
+  if (!container) return;
+  if (memoData.length === 0) {
+    container.innerHTML = '';
+    return;
+  }
+  container.innerHTML = memoData.map(list => {
+    const done = list.items.filter(i => i.done).length;
+    const total = list.items.length;
+    return `
+    <div class="memo-list">
+      <div class="memo-list-header">
+        <span style="font-size:16px">${list.icon}</span>
+        <input class="memo-list-title" id="memo-title-${list.id}"
+          value="${escHtml(list.title)}"
+          oninput="updateMemoTitle(${list.id}, this.value)"
+          placeholder="清單名稱">
+        <span class="memo-progress" id="memo-prog-${list.id}">${total > 0 ? done+'/'+total : ''}</span>
+        <button class="memo-list-del" onclick="deleteMemoList(${list.id})" aria-label="刪除清單">
+          <i class="ti ti-trash"></i>
+        </button>
+      </div>
+      <div class="memo-items">
+        ${list.items.map(item => `
+          <div class="memo-item">
+            <button class="memo-check ${item.done ? 'done' : ''}"
+              onclick="toggleMemoItem(${list.id}, ${item.id})"
+              aria-label="${item.done ? '取消完成' : '標記完成'}">
+              ${item.done ? '✓' : ''}
+            </button>
+            <input class="memo-text ${item.done ? 'done-text' : ''}"
+              id="memo-item-${item.id}"
+              value="${escHtml(item.text)}"
+              placeholder="輸入項目…"
+              oninput="updateMemoItemText(${list.id}, ${item.id}, this.value)"
+              onkeydown="memoItemKeydown(event, ${list.id}, ${item.id})">
+            <button class="memo-del" onclick="deleteMemoItem(${list.id}, ${item.id})" aria-label="刪除項目">
+              <i class="ti ti-x"></i>
+            </button>
+          </div>`).join('')}
+      </div>
+      <button class="memo-add-btn" onclick="addMemoItem(${list.id})">
+        <i class="ti ti-plus" style="font-size:14px"></i> 新增項目
+      </button>
+    </div>`; }).join('');
+}
+
+// Init memo on load
+document.addEventListener('DOMContentLoaded', () => {
+  renderMemo();
+});
 </script>
 </body>
 </html>
