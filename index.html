@@ -92,12 +92,22 @@
   .save-btn { width: 100%; padding: 13px; background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--radius); color: var(--accent); font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer; margin-top: 12px; }
   .offline-badge { display: none; background: rgba(235,87,87,0.15); color: var(--danger); font-size: 12px; padding: 6px 14px; border-radius: 99px; text-align: center; margin-bottom: 10px; }
   .offline-badge.show { display: block; }
+  .update-banner { display: none; position: fixed; top: env(safe-area-inset-top, 0px); left: 0; right: 0; background: #3C3489; color: #fff; font-size: 14px; padding: 12px 16px; z-index: 1000; display: none; align-items: center; justify-content: space-between; gap: 10px; }
+  .update-banner.show { display: flex; }
+  .update-banner-text { flex: 1; font-size: 13px; }
+  .update-banner-btn { background: rgba(255,255,255,0.2); border: none; color: #fff; font-size: 13px; font-weight: 600; padding: 6px 14px; border-radius: 99px; cursor: pointer; white-space: nowrap; font-family: inherit; }
   .spinner { width: 18px; height: 18px; border: 2px solid rgba(200,184,240,0.2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; }
   @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
 </head>
 <body>
+
+<div class="update-banner" id="updateBanner">
+  <span class="update-banner-text">🆕 有新版本可用！</span>
+  <button class="update-banner-btn" onclick="doUpdate()">立即更新</button>
+  <button class="update-banner-btn" onclick="document.getElementById('updateBanner').classList.remove('show')" style="background:rgba(255,255,255,0.1)">✕</button>
+</div>
 
 <div class="status-bar"></div>
 
@@ -243,7 +253,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = '2.6.0';
+const APP_VERSION = '2.7.0';
 function getApiUrl() {
   return localStorage.getItem('workerUrl') || '';
 }
@@ -281,7 +291,33 @@ window.addEventListener('load', () => {
       .then(() => console.log('SW registered ✓'))
       .catch(e => console.warn('SW failed:', e));
   }
+  // 版本偵測：每次開啟時檢查是否有新版
+  checkForUpdate();
 });
+
+async function checkForUpdate() {
+  try {
+    const res = await fetch('./index.html?nocache=' + Date.now());
+    const text = await res.text();
+    const match = text.match(/const APP_VERSION = '([^']+)'/);
+    if (match && match[1] !== APP_VERSION) {
+      document.getElementById('updateBanner').classList.add('show');
+      document.getElementById('updateBanner').querySelector('.update-banner-text').textContent =
+        `🆕 有新版本 v${match[1]}，目前 v${APP_VERSION}`;
+    }
+  } catch(e) { /* 離線或失敗就不顯示 */ }
+}
+
+function doUpdate() {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(regs => {
+      regs.forEach(r => r.unregister());
+      window.location.reload(true);
+    });
+  } else {
+    window.location.reload(true);
+  }
+}
 window.addEventListener('online', checkOffline);
 window.addEventListener('offline', checkOffline);
 
