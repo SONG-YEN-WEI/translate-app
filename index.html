@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1a1a2e">
+<meta name="description" content="日文翻譯繁體中文 — 支援文字輸入與圖片辨識">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="日中翻譯">
+<title>日中翻譯</title>
+
+<!-- PWA Manifest (inline) -->
+<script>
+const manifestData = {
+  name: "日中翻譯 — Japanese to Chinese",
+  short_name: "日中翻譯",
+  description: "日文翻譯繁體中文，支援文字與圖片辨識",
+  start_url: "./",
+  display: "standalone",
+  background_color: "#1a1a2e",
+  theme_color: "#1a1a2e",
+  orientation: "portrait",
+  icons: [
+    { src: "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192"><rect width="192" height="192" rx="40" fill="#1a1a2e"/><text x="96" y="130" font-size="110" text-anchor="middle" fill="#c8b8f0" font-family="serif">日</text></svg>`), sizes: "192x192", type: "image/svg+xml" },
+    { src: "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="100" fill="#1a1a2e"/><text x="256" y="350" font-size="300" text-anchor="middle" fill="#c8b8f0" font-family="serif">日</text></svg>`), sizes: "512x512", type: "image/svg+xml" }
+  ]
+};
+const blob = new Blob([JSON.stringify(manifestData)], {type: 'application/json'});
+const manifestURL = URL.createObjectURL(blob);
+const link = document.createElement('link');
+link.rel = 'manifest';
+link.href = manifestURL;
+document.head.appendChild(link);
+</script>
+
+<style>
+  :root {
+    --bg: #1a1a2e;
+    --surface: #16213e;
+    --surface2: #0f3460;
+    --accent: #c8b8f0;
+    --accent2: #9d8dc4;
+    --text: #f0ecff;
+    --text2: #a09bb8;
+    --text3: #5c5878;
+    --border: rgba(200,184,240,0.12);
+    --border2: rgba(200,184,240,0.22);
+    --success: #6fcf97;
+    --danger: #eb5757;
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Hiragino Sans', 'Noto Sans TC', 'PingFang TC', sans-serif;
+    overscroll-behavior: none;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100dvh;
+  }
+
+  /* ── Status bar spacer for notch phones ── */
+  .status-bar {
+    height: env(safe-area-inset-top, 0px);
+    background: var(--bg);
+  }
+
+  /* ── Header ── */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px 10px;
+    border-bottom: 0.5px solid var(--border);
+  }
+  .header-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .logo-icon {
+    width: 34px;
+    height: 34px;
+    background: var(--surface2);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent);
+    font-family: serif;
+    letter-spacing: -1px;
+  }
+  .logo-text {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: 0.02em;
+  }
+  .logo-sub {
+    font-size: 11px;
+    color: var(--text2);
+    margin-top: 1px;
+  }
+  .header-btn {
+    width: 36px;
+    height: 36px;
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text2);
+    font-size: 18px;
+    transition: background 0.15s;
+  }
+  .header-btn:active { background: var(--surface2); }
+
+  /* ── Tabs ── */
+  .tabs {
+    display: flex;
+    padding: 10px 20px 0;
+    gap: 4px;
+    border-bottom: 0.5px solid var(--border);
+  }
+  .tab {
+    flex: 1;
+    padding: 9px 0;
+    font-size: 13px;
+    font-weight: 500;
+    text-align: center;
+    color: var(--text2);
+    border: none;
+    background: none;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+  }
+  .tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  /* ── Scroll body ── */
+  .scroll-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 16px 100px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ── Lang bar ── */
+  .lang-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .lang-pill {
+    flex: 1;
+    background: var(--surface);
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .lang-arrow {
+    font-size: 20px;
+    color: var(--accent2);
+    flex-shrink: 0;
+  }
+
+  /* ── Input card ── */
+  .input-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 14px;
+    margin-bottom: 12px;
+  }
+  .input-card textarea {
+    width: 100%;
+    background: none;
+    border: none;
+    outline: none;
+    font-size: 17px;
+    font-family: inherit;
+    color: var(--text);
+    resize: none;
+    min-height: 90px;
+    line-height: 1.65;
+    caret-color: var(--accent);
+  }
+  .input-card textarea::placeholder { color: var(--text3); }
+  .input-footer {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding-top: 10px;
+    border-top: 0.5px solid var(--border);
+    margin-top: 6px;
+  }
+  .icon-btn {
+    width: 34px;
+    height: 34px;
+    background: none;
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text2);
+    font-size: 16px;
+    transition: background 0.15s;
+  }
+  .icon-btn:active { background: var(--surface2); }
+  .char-count {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--text3);
+  }
+
+  /* ── Translate button ── */
+  .translate-btn {
+    width: 100%;
+    padding: 14px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    color: var(--accent);
+    font-size: 15px;
+    font-weight: 600;
+    font-family: inherit;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 14px;
+    transition: all 0.15s;
+  }
+  .translate-btn:active { opacity: 0.8; transform: scale(0.98); }
+  .translate-btn.loading { opacity: 0.6; cursor: not-allowed; }
+
+  /* ── Result card ── */
+  .result-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 14px;
+    margin-bottom: 14px;
+    display: none;
+    animation: fadeIn 0.2s ease;
+  }
+  .result-card.show { display: block; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+  .result-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .result-badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 99px;
+    background: rgba(200,184,240,0.12);
+    color: var(--accent);
+    letter-spacing: 0.05em;
+  }
+  .result-actions { display: flex; gap: 4px; }
+  .result-text {
+    font-size: 19px;
+    line-height: 1.7;
+    color: var(--text);
+    margin-bottom: 8px;
+    font-weight: 500;
+  }
+  .result-note {
+    font-size: 13px;
+    color: var(--text2);
+    line-height: 1.6;
+    padding-top: 8px;
+    border-top: 0.5px solid var(--border);
+  }
+
+  /* ── Image section ── */
+  .image-upload-area {
+    border: 1.5px dashed var(--border2);
+    border-radius: var(--radius);
+    padding: 28px 16px;
+    text-align: center;
+    cursor: pointer;
+    margin-bottom: 12px;
+    transition: border-color 0.15s;
+    background: var(--surface);
+  }
+  .image-upload-area:active { border-color: var(--accent); }
+  .upload-icon { font-size: 36px; color: var(--accent2); margin-bottom: 8px; }
+  .upload-title { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  .upload-sub { font-size: 13px; color: var(--text2); }
+  #fileInput { display: none; }
+  .preview-img {
+    width: 100%;
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    display: none;
+    max-height: 260px;
+    object-fit: cover;
+  }
+
+  /* ── History ── */
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text3);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .history-list { display: flex; flex-direction: column; gap: 1px; }
+  .history-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    background: var(--surface);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+  .history-item:active { background: var(--surface2); }
+  .h-icon {
+    width: 30px;
+    height: 30px;
+    background: var(--surface2);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: var(--accent2);
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .h-texts { flex: 1; min-width: 0; }
+  .h-src { font-size: 13px; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px; }
+  .h-tgt { font-size: 15px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .h-empty { text-align: center; padding: 32px 0; color: var(--text3); font-size: 14px; }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed;
+    bottom: 90px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--surface2);
+    color: var(--text);
+    font-size: 14px;
+    padding: 10px 20px;
+    border-radius: 99px;
+    border: 0.5px solid var(--border2);
+    opacity: 0;
+    transition: all 0.2s;
+    pointer-events: none;
+    white-space: nowrap;
+    z-index: 999;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* ── Bottom nav ── */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--surface);
+    border-top: 0.5px solid var(--border);
+    display: flex;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 10px 0;
+    font-size: 11px;
+    color: var(--text3);
+    cursor: pointer;
+    border: none;
+    background: none;
+    transition: color 0.15s;
+  }
+  .nav-item.active { color: var(--accent); }
+  .nav-item i { font-size: 22px; }
+
+  /* ── Spinner ── */
+  .spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(200,184,240,0.2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: inline-block;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Settings panel ── */
+  .settings-panel {
+    display: none;
+    padding: 0;
+  }
+  .settings-panel.show { display: block; }
+  .settings-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    background: var(--surface);
+    border-radius: var(--radius-sm);
+    margin-bottom: 8px;
+  }
+  .settings-label { font-size: 14px; color: var(--text); }
+  .settings-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
+  .api-input {
+    width: 100%;
+    background: var(--surface);
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    font-size: 14px;
+    font-family: monospace;
+    color: var(--text);
+    outline: none;
+    margin-top: 6px;
+    caret-color: var(--accent);
+  }
+  .api-input::placeholder { color: var(--text3); }
+  .save-btn {
+    width: 100%;
+    padding: 13px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    color: var(--accent);
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    margin-top: 12px;
+  }
+  .offline-badge {
+    display: none;
+    background: rgba(235,87,87,0.15);
+    color: var(--danger);
+    font-size: 12px;
+    padding: 6px 14px;
+    border-radius: 99px;
+    text-align: center;
+    margin-bottom: 10px;
+  }
+  .offline-badge.show { display: block; }
+</style>
+
+<!-- Tabler Icons -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+</head>
+<body>
+
+<div class="status-bar"></div>
+
+<header class="header">
+  <div class="header-logo">
+    <div class="logo-icon">日</div>
+    <div>
+      <div class="logo-text">日中翻譯</div>
+      <div class="logo-sub">Japanese → 繁體中文</div>
+    </div>
+  </div>
+  <button class="header-btn" onclick="showSettings()" aria-label="設定">
+    <i class="ti ti-settings"></i>
+  </button>
+</header>
+
+<div class="tabs" id="tabBar">
+  <button class="tab active" onclick="switchTab('text', this)">文字輸入</button>
+  <button class="tab" onclick="switchTab('image', this)">圖片辨識</button>
+  <button class="tab" onclick="switchTab('history', this)">歷史紀錄</button>
+</div>
+
+<div class="scroll-body" id="scrollBody">
+
+  <div id="offlineBadge" class="offline-badge">目前離線 — 需要網路才能翻譯</div>
+
+  <!-- ── Text tab ── -->
+  <div id="tab-text">
+    <div class="lang-bar" style="margin-top:4px">
+      <div class="lang-pill">🇯🇵 日文</div>
+      <span class="lang-arrow">→</span>
+      <div class="lang-pill">🇹🇼 繁體中文</div>
+    </div>
+
+    <div class="input-card">
+      <textarea id="jpInput" placeholder="輸入日文…&#10;例：いただきます" rows="4" oninput="updateCount()"></textarea>
+      <div class="input-footer">
+        <button class="icon-btn" onclick="clearText()" aria-label="清除"><i class="ti ti-x"></i></button>
+        <button class="icon-btn" onclick="pasteClipboard()" aria-label="貼上"><i class="ti ti-clipboard"></i></button>
+        <button class="icon-btn" onclick="pasteDemo()" aria-label="範例" title="填入範例"><i class="ti ti-bulb"></i></button>
+        <span class="char-count" id="charCount">0</span>
+      </div>
+    </div>
+
+    <button class="translate-btn" id="translateBtn" onclick="doTranslate()">
+      <i class="ti ti-language"></i> 立即翻譯
+    </button>
+
+    <div class="result-card" id="resultCard">
+      <div class="result-head">
+        <span class="result-badge">翻譯結果</span>
+        <div class="result-actions">
+          <button class="icon-btn" onclick="copyResult()" aria-label="複製"><i class="ti ti-copy"></i></button>
+          <button class="icon-btn" onclick="speakResult()" aria-label="朗讀"><i class="ti ti-volume"></i></button>
+        </div>
+      </div>
+      <div class="result-text" id="resultText"></div>
+      <div class="result-note" id="resultNote" style="display:none"></div>
+    </div>
+  </div>
+
+  <!-- ── Image tab ── -->
+  <div id="tab-image" style="display:none">
+    <input type="file" id="fileInput" accept="image/*" capture="environment" onchange="handleImageUpload(event)">
+
+    <div class="image-upload-area" onclick="document.getElementById('fileInput').click()">
+      <div class="upload-icon"><i class="ti ti-camera-plus"></i></div>
+      <div class="upload-title">拍照或選取圖片</div>
+      <div class="upload-sub">菜單、路牌、包裝等日文皆可辨識</div>
+    </div>
+
+    <img id="previewImg" class="preview-img" alt="預覽">
+
+    <button class="translate-btn" id="imgTranslateBtn" onclick="doImageTranslate()" style="display:none">
+      <i class="ti ti-photo-scan"></i> 辨識並翻譯
+    </button>
+
+    <div class="result-card" id="imgResultCard">
+      <div class="result-head">
+        <span class="result-badge">辨識結果</span>
+        <div class="result-actions">
+          <button class="icon-btn" onclick="copyImgResult()" aria-label="複製"><i class="ti ti-copy"></i></button>
+        </div>
+      </div>
+      <div class="result-text" id="imgResultText"></div>
+      <div class="result-note" id="imgResultNote" style="display:none"></div>
+    </div>
+  </div>
+
+  <!-- ── History tab ── -->
+  <div id="tab-history" style="display:none">
+    <div class="section-label">翻譯紀錄</div>
+    <div class="history-list" id="historyList"></div>
+  </div>
+
+  <!-- ── Settings panel ── -->
+  <div id="settingsPanel" class="settings-panel">
+    <div class="section-label" style="margin-top:4px">API 設定</div>
+    <div class="settings-row" style="flex-direction:column;align-items:flex-start">
+      <div>
+        <div class="settings-label">Anthropic API Key</div>
+        <div class="settings-sub">從 console.anthropic.com 取得，儲存於本機</div>
+      </div>
+      <input class="api-input" id="apiKeyInput" type="password" placeholder="sk-ant-api03-…">
+    </div>
+    <button class="save-btn" onclick="saveApiKey()">儲存金鑰</button>
+
+    <div class="section-label" style="margin-top:24px">關於</div>
+    <div class="settings-row" style="flex-direction:column;align-items:flex-start">
+      <div class="settings-label">日中翻譯 PWA</div>
+      <div class="settings-sub">v1.0 · 翻譯由 Claude claude-sonnet-4-20250514 驅動 · 圖片處理在本機完成</div>
+    </div>
+    <div class="settings-row" style="justify-content:space-between">
+      <div>
+        <div class="settings-label">清除所有紀錄</div>
+        <div class="settings-sub">刪除本機儲存的翻譯歷史</div>
+      </div>
+      <button class="icon-btn" onclick="clearHistory()" aria-label="清除紀錄" style="flex-shrink:0"><i class="ti ti-trash"></i></button>
+    </div>
+  </div>
+
+</div><!-- /scroll-body -->
+
+<!-- Bottom nav -->
+<nav class="bottom-nav">
+  <button class="nav-item active" id="nav-text" onclick="switchTab('text', null, 'nav-text')">
+    <i class="ti ti-keyboard"></i>
+    <span>文字</span>
+  </button>
+  <button class="nav-item" id="nav-image" onclick="switchTab('image', null, 'nav-image')">
+    <i class="ti ti-camera"></i>
+    <span>圖片</span>
+  </button>
+  <button class="nav-item" id="nav-history" onclick="switchTab('history', null, 'nav-history')">
+    <i class="ti ti-clock"></i>
+    <span>紀錄</span>
+  </button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── State ──
+let currentTab = 'text';
+let currentImageBase64 = null;
+const API_URL = 'https://api.anthropic.com/v1/messages';
+
+// ── Init ──
+window.addEventListener('load', () => {
+  const saved = localStorage.getItem('apiKey');
+  if (saved) document.getElementById('apiKeyInput').value = saved;
+  renderHistory();
+  checkOffline();
+});
+window.addEventListener('online', checkOffline);
+window.addEventListener('offline', checkOffline);
+
+function checkOffline() {
+  document.getElementById('offlineBadge').classList.toggle('show', !navigator.onLine);
+}
+
+function getApiKey() {
+  return localStorage.getItem('apiKey') || '';
+}
+
+function saveApiKey() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (!key) { showToast('請輸入 API Key'); return; }
+  localStorage.setItem('apiKey', key);
+  showToast('已儲存 ✓');
+}
+
+// ── Tabs ──
+function switchTab(tab, tabEl, navId) {
+  currentTab = tab;
+  document.getElementById('settingsPanel').classList.remove('show');
+  ['text','image','history'].forEach(t => {
+    document.getElementById('tab-' + t).style.display = t === tab ? 'block' : 'none';
+  });
+  document.querySelectorAll('.tab').forEach((el, i) => {
+    el.classList.toggle('active', ['text','image','history'][i] === tab);
+  });
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  const activeNav = navId || 'nav-' + tab;
+  const navEl = document.getElementById(activeNav);
+  if (navEl) navEl.classList.add('active');
+  if (tab === 'history') renderHistory();
+}
+
+function showSettings() {
+  const panel = document.getElementById('settingsPanel');
+  const showing = panel.classList.contains('show');
+  ['text','image','history'].forEach(t => document.getElementById('tab-' + t).style.display = 'none');
+  if (showing) {
+    panel.classList.remove('show');
+    document.getElementById('tab-' + currentTab).style.display = 'block';
+  } else {
+    panel.classList.add('show');
+  }
+}
+
+// ── Text translation ──
+function updateCount() {
+  const len = document.getElementById('jpInput').value.length;
+  document.getElementById('charCount').textContent = len;
+}
+function clearText() {
+  document.getElementById('jpInput').value = '';
+  updateCount();
+  document.getElementById('resultCard').classList.remove('show');
+}
+async function pasteClipboard() {
+  try {
+    const text = await navigator.clipboard.readText();
+    document.getElementById('jpInput').value = text;
+    updateCount();
+  } catch { showToast('無法讀取剪貼板'); }
+}
+function pasteDemo() {
+  document.getElementById('jpInput').value = 'いただきます。今日は本当にいい天気ですね。どこかに出かけませんか？';
+  updateCount();
+}
+
+async function doTranslate() {
+  const input = document.getElementById('jpInput').value.trim();
+  if (!input) { showToast('請輸入日文'); return; }
+  const key = getApiKey();
+  if (!key) { showToast('請先在設定中輸入 API Key'); showSettings(); return; }
+
+  const btn = document.getElementById('translateBtn');
+  btn.classList.add('loading');
+  btn.innerHTML = '<span class="spinner"></span> 翻譯中…';
+  document.getElementById('resultCard').classList.remove('show');
+
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: `你是專業的日中翻譯員，請將以下日文翻譯成自然流暢的繁體中文。
+只回傳 JSON（不含 markdown 代碼框），格式：
+{"translation":"翻譯結果","note":"語氣或文化補充，若無則空字串"}
+
+日文：${input}`
+        }]
+      })
+    });
+    if (!res.ok) throw new Error('API ' + res.status);
+    const data = await res.json();
+    const raw = (data.content || []).map(b => b.text || '').join('');
+    const parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
+    showTextResult(parsed.translation, parsed.note);
+    saveHistory(input, parsed.translation, 'text');
+  } catch(e) {
+    showTextResult('翻譯失敗：' + e.message, '');
+  }
+
+  btn.classList.remove('loading');
+  btn.innerHTML = '<i class="ti ti-language"></i> 立即翻譯';
+}
+
+function showTextResult(translation, note) {
+  document.getElementById('resultText').textContent = translation;
+  const noteEl = document.getElementById('resultNote');
+  if (note) {
+    noteEl.textContent = '💡 ' + note;
+    noteEl.style.display = 'block';
+  } else {
+    noteEl.style.display = 'none';
+  }
+  document.getElementById('resultCard').classList.add('show');
+  document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function copyResult() {
+  const t = document.getElementById('resultText').textContent;
+  navigator.clipboard.writeText(t).then(() => showToast('已複製 ✓')).catch(() => showToast('複製失敗'));
+}
+function speakResult() {
+  const t = document.getElementById('resultText').textContent;
+  if (!t) return;
+  const utt = new SpeechSynthesisUtterance(t);
+  utt.lang = 'zh-TW';
+  speechSynthesis.speak(utt);
+}
+
+// ── Image translation ──
+function handleImageUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const dataUrl = ev.target.result;
+    currentImageBase64 = dataUrl.split(',')[1];
+    const img = document.getElementById('previewImg');
+    img.src = dataUrl;
+    img.style.display = 'block';
+    document.getElementById('imgTranslateBtn').style.display = 'flex';
+    document.getElementById('imgResultCard').classList.remove('show');
+    document.querySelector('.image-upload-area').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+async function doImageTranslate() {
+  if (!currentImageBase64) return;
+  const key = getApiKey();
+  if (!key) { showToast('請先在設定中輸入 API Key'); showSettings(); return; }
+
+  const btn = document.getElementById('imgTranslateBtn');
+  btn.classList.add('loading');
+  btn.innerHTML = '<span class="spinner"></span> 辨識中…';
+  document.getElementById('imgResultCard').classList.remove('show');
+
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1500,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: currentImageBase64 } },
+            { type: 'text', text: `請辨識圖片中所有日文文字，並翻譯成繁體中文。
+只回傳 JSON（不含 markdown 代碼框）：
+{"original":"原始日文（若有多行用 \\n 分隔）","translation":"對應的繁體中文翻譯","note":"若有特別說明如菜單、路牌等背景"}` }
+          ]
+        }]
+      })
+    });
+    if (!res.ok) throw new Error('API ' + res.status);
+    const data = await res.json();
+    const raw = (data.content || []).map(b => b.text || '').join('');
+    const parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
+    showImgResult(parsed.translation, parsed.original, parsed.note);
+    saveHistory(parsed.original || '（圖片）', parsed.translation, 'image');
+  } catch(e) {
+    showImgResult('辨識失敗：' + e.message, '', '');
+  }
+
+  btn.classList.remove('loading');
+  btn.innerHTML = '<i class="ti ti-photo-scan"></i> 辨識並翻譯';
+}
+
+function showImgResult(translation, original, note) {
+  document.getElementById('imgResultText').textContent = translation;
+  const noteEl = document.getElementById('imgResultNote');
+  const parts = [];
+  if (original) parts.push('原文：' + original);
+  if (note) parts.push('💡 ' + note);
+  if (parts.length) {
+    noteEl.textContent = parts.join('\n');
+    noteEl.style.display = 'block';
+  } else {
+    noteEl.style.display = 'none';
+  }
+  document.getElementById('imgResultCard').classList.add('show');
+}
+function copyImgResult() {
+  const t = document.getElementById('imgResultText').textContent;
+  navigator.clipboard.writeText(t).then(() => showToast('已複製 ✓')).catch(() => showToast('複製失敗'));
+}
+
+// ── History ──
+function saveHistory(src, tgt, type) {
+  const history = JSON.parse(localStorage.getItem('history') || '[]');
+  history.unshift({ src, tgt, type, ts: Date.now() });
+  if (history.length > 50) history.pop();
+  localStorage.setItem('history', JSON.stringify(history));
+}
+function renderHistory() {
+  const history = JSON.parse(localStorage.getItem('history') || '[]');
+  const list = document.getElementById('historyList');
+  if (!history.length) {
+    list.innerHTML = '<div class="h-empty">尚無翻譯紀錄</div>';
+    return;
+  }
+  list.innerHTML = history.map(h => `
+    <div class="history-item" onclick="reuseHistory(${JSON.stringify(h.src).replace(/'/g,"&#39;")})">
+      <div class="h-icon"><i class="ti ti-${h.type === 'image' ? 'photo' : 'language'}"></i></div>
+      <div class="h-texts">
+        <div class="h-src">${escHtml(h.src)}</div>
+        <div class="h-tgt">${escHtml(h.tgt)}</div>
+      </div>
+    </div>`).join('');
+}
+function reuseHistory(src) {
+  switchTab('text');
+  document.getElementById('jpInput').value = src;
+  updateCount();
+  document.getElementById('resultCard').classList.remove('show');
+}
+function clearHistory() {
+  if (!confirm('確定要清除所有紀錄？')) return;
+  localStorage.removeItem('history');
+  renderHistory();
+  showToast('已清除 ✓');
+}
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Toast ──
+let toastTimer;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+// ── Service Worker (inline) ──
+const swCode = `
+const CACHE = 'jptrans-v1';
+const ASSETS = ['./', './index.html'];
+self.addEventListener('install', e => {
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
+  self.skipWaiting();
+});
+self.addEventListener('activate', e => {
+  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))));
+  self.clients.claim();
+});
+self.addEventListener('fetch', e => {
+  if (e.request.url.includes('api.anthropic.com')) return;
+  e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
+});
+`;
+const swBlob = new Blob([swCode], { type: 'application/javascript' });
+const swUrl = URL.createObjectURL(swBlob);
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register(swUrl).catch(() => {});
+}
+</script>
+
+</body>
+</html>
