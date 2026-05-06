@@ -123,9 +123,11 @@
 </header>
 
 <div class="tabs">
-  <button class="tab active" onclick="switchTab('text',this)">文字輸入</button>
-  <button class="tab" onclick="switchTab('image',this)">圖片辨識</button>
-  <button class="tab" onclick="switchTab('history',this)">歷史紀錄</button>
+  <button class="tab active" onclick="switchTab('text',this)">文字</button>
+  <button class="tab" onclick="switchTab('image',this)">圖片</button>
+  <button class="tab" onclick="switchTab('phrase',this)">常用句</button>
+  <button class="tab" onclick="switchTab('currency',this)">匯率</button>
+  <button class="tab" onclick="switchTab('history',this)">紀錄</button>
 </div>
 
 <div class="scroll-body">
@@ -153,6 +155,7 @@
       <div class="result-head">
         <span class="result-badge">翻譯結果</span>
         <div class="result-actions">
+          <button class="icon-btn" onclick="toggleNote()" id="noteToggleBtn" aria-label="顯示提示" title="顯示/隱藏補充說明"><i class="ti ti-info-circle"></i></button>
           <button class="icon-btn" onclick="copyResult()" aria-label="複製"><i class="ti ti-copy"></i></button>
           <button class="icon-btn" onclick="speakResult()" aria-label="朗讀"><i class="ti ti-volume"></i></button>
         </div>
@@ -196,6 +199,40 @@
       <div class="result-text" id="imgResultText"></div>
       <div class="result-note" id="imgResultNote" style="display:none"></div>
     </div>
+  </div>
+
+  <!-- 常用句 tab -->
+  <div id="tab-phrase" style="display:none">
+    <div class="section-label" style="margin-top:4px">點句子自動填入翻譯框</div>
+    <div id="phraseList"></div>
+  </div>
+
+  <!-- 匯率 tab -->
+  <div id="tab-currency" style="display:none">
+    <div class="section-label" style="margin-top:4px">日圓 ⇄ 台幣換算</div>
+    <div class="input-card" style="margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <span style="font-size:13px;color:var(--text2);width:30px">¥</span>
+        <input id="jpyInput" type="number" placeholder="日圓金額" oninput="calcCurrency('jpy')"
+          style="flex:1;background:none;border:none;outline:none;font-size:18px;color:var(--text);font-family:inherit;">
+      </div>
+      <div style="height:0.5px;background:var(--border)"></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
+        <span style="font-size:13px;color:var(--text2);width:30px">NT$</span>
+        <input id="twdInput" type="number" placeholder="台幣金額" oninput="calcCurrency('twd')"
+          style="flex:1;background:none;border:none;outline:none;font-size:18px;color:var(--text);font-family:inherit;">
+      </div>
+    </div>
+    <div style="background:var(--surface);border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:13px;color:var(--text2)">匯率（¥1 = NT$）</span>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span id="rateDisplay" style="font-size:15px;font-weight:600;color:var(--accent)">載入中…</span>
+        <button class="icon-btn" onclick="fetchRate()" aria-label="更新匯率"><i class="ti ti-refresh"></i></button>
+      </div>
+    </div>
+    <div id="rateTime" style="font-size:11px;color:var(--text3);text-align:right;margin-bottom:14px"></div>
+    <div class="section-label">常用金額換算</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="quickAmounts"></div>
   </div>
 
   <div id="tab-history" style="display:none">
@@ -245,6 +282,12 @@
   <button class="nav-item" id="nav-image" onclick="switchTab('image',null,'nav-image')">
     <i class="ti ti-camera"></i><span>圖片</span>
   </button>
+  <button class="nav-item" id="nav-phrase" onclick="switchTab('phrase',null,'nav-phrase')">
+    <i class="ti ti-messages"></i><span>常用句</span>
+  </button>
+  <button class="nav-item" id="nav-currency" onclick="switchTab('currency',null,'nav-currency')">
+    <i class="ti ti-currency-yen"></i><span>匯率</span>
+  </button>
   <button class="nav-item" id="nav-history" onclick="switchTab('history',null,'nav-history')">
     <i class="ti ti-clock"></i><span>紀錄</span>
   </button>
@@ -253,9 +296,20 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = '2.7.0';
-function getApiUrl() {
-  return localStorage.getItem('workerUrl') || '';
+const APP_VERSION = '2.8.0';
+const TABS = ['text','image','phrase','currency','history'];
+function getApiUrl() { return localStorage.getItem('workerUrl') || ''; }
+
+function switchTab(tab, tabEl, navId) {
+  currentTab = tab;
+  document.getElementById('settingsPanel').classList.remove('show');
+  TABS.forEach(t => document.getElementById('tab-'+t).style.display = t===tab ? 'block' : 'none');
+  document.querySelectorAll('.tab').forEach((el,i) => el.classList.toggle('active', TABS[i]===tab));
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  document.getElementById(navId||'nav-'+tab).classList.add('active');
+  if (tab==='history') renderHistory();
+  if (tab==='currency' && !currentRate) fetchRate();
+  if (tab==='phrase') renderPhrases();
 }
 let currentTab = 'text';
 let currentImageBase64 = null;
@@ -338,23 +392,10 @@ function saveWorkerUrl() {
   showToast('Worker 網址已儲存 ✓');
 }
 
-function switchTab(tab, tabEl, navId) {
-  currentTab = tab;
-  document.getElementById('settingsPanel').classList.remove('show');
-  ['text','image','history'].forEach(t =>
-    document.getElementById('tab-'+t).style.display = t===tab ? 'block' : 'none'
-  );
-  document.querySelectorAll('.tab').forEach((el,i) =>
-    el.classList.toggle('active', ['text','image','history'][i]===tab)
-  );
-  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-  document.getElementById(navId||'nav-'+tab).classList.add('active');
-  if (tab==='history') renderHistory();
-}
 function showSettings() {
   const panel = document.getElementById('settingsPanel');
   const showing = panel.classList.contains('show');
-  ['text','image','history'].forEach(t => document.getElementById('tab-'+t).style.display='none');
+  TABS.forEach(t => document.getElementById('tab-'+t).style.display='none');
   if (showing) {
     panel.classList.remove('show');
     document.getElementById('tab-'+currentTab).style.display='block';
@@ -428,7 +469,12 @@ async function doTranslate() {
 function showTextResult(translation, note) {
   document.getElementById('resultText').textContent = translation;
   const n = document.getElementById('resultNote');
-  if (note) { n.textContent='💡 '+note; n.style.display='block'; } else { n.style.display='none'; }
+  n.dataset.content = note || '';
+  n.textContent = note ? '💡 ' + note : '';
+  n.style.display = 'none';
+  noteVisible = false;
+  document.getElementById('noteToggleBtn').style.color = '';
+  document.getElementById('noteToggleBtn').style.opacity = note ? '1' : '0.3';
   document.getElementById('resultCard').classList.add('show');
   document.getElementById('resultCard').scrollIntoView({behavior:'smooth',block:'nearest'});
 }
@@ -545,6 +591,114 @@ function clearHistory(){
 }
 function escHtml(str){
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── 隱藏/顯示補充說明 ──
+let noteVisible = false;
+function toggleNote() {
+  const noteEl = document.getElementById('resultNote');
+  if (!noteEl.dataset.content) return;
+  noteVisible = !noteVisible;
+  noteEl.style.display = noteVisible ? 'block' : 'none';
+  document.getElementById('noteToggleBtn').style.color = noteVisible ? 'var(--accent)' : '';
+}
+
+// ── 常用句 ──
+const PHRASES = [
+  { cat: '問路', items: [
+    { zh: '請問廁所在哪裡？', jp: 'トイレはどこですか？' },
+    { zh: '請問最近的車站在哪裡？', jp: '一番近い駅はどこですか？' },
+    { zh: '請問這裡怎麼走？', jp: 'ここへはどう行けばいいですか？' },
+  ]},
+  { cat: '購物', items: [
+    { zh: '這個多少錢？', jp: 'これはいくらですか？' },
+    { zh: '可以便宜一點嗎？', jp: '少し安くなりますか？' },
+    { zh: '我要買這個。', jp: 'これをください。' },
+    { zh: '請給我收據。', jp: '領収書をください。' },
+    { zh: '可以刷卡嗎？', jp: 'カードで払えますか？' },
+  ]},
+  { cat: '餐廳', items: [
+    { zh: '不好意思，麻煩你了。', jp: 'すみません。' },
+    { zh: '請給我菜單。', jp: 'メニューをください。' },
+    { zh: '我要點餐。', jp: '注文をお願いします。' },
+    { zh: '我對花生過敏。', jp: 'ピーナッツアレルギーがあります。' },
+    { zh: '不要辣。', jp: '辛くしないでください。' },
+    { zh: '好吃！', jp: 'おいしいです！' },
+    { zh: '麻煩結帳。', jp: 'お会計をお願いします。' },
+  ]},
+  { cat: '緊急', items: [
+    { zh: '請叫救護車！', jp: '救急車を呼んでください！' },
+    { zh: '請叫警察！', jp: '警察を呼んでください！' },
+    { zh: '我迷路了。', jp: '迷子になりました。' },
+    { zh: '我的錢包被偷了。', jp: '財布を盗まれました。' },
+  ]},
+  { cat: '基本禮貌', items: [
+    { zh: '謝謝。', jp: 'ありがとうございます。' },
+    { zh: '不好意思。', jp: 'すみません。' },
+    { zh: '對不起。', jp: 'ごめんなさい。' },
+    { zh: '我不會說日文。', jp: '日本語が話せません。' },
+    { zh: '請說慢一點。', jp: 'もっとゆっくり話してください。' },
+  ]},
+];
+
+function renderPhrases() {
+  const el = document.getElementById('phraseList');
+  el.innerHTML = PHRASES.map(cat => `
+    <div style="margin-bottom:16px">
+      <div class="section-label" style="margin-bottom:6px">${cat.cat}</div>
+      ${cat.items.map(p => `
+        <div class="history-item" style="flex-direction:column;align-items:flex-start;gap:3px" onclick="usePhrase(${JSON.stringify(p.jp)})">
+          <div style="font-size:14px;color:var(--text)">${escHtml(p.zh)}</div>
+          <div style="font-size:12px;color:var(--text2)">${escHtml(p.jp)}</div>
+        </div>`).join('')}
+    </div>`).join('');
+}
+
+function usePhrase(jp) {
+  switchTab('text', null, 'nav-text');
+  if (translateDirection !== 'jp2zh') swapLang();
+  document.getElementById('jpInput').value = jp;
+  updateCount();
+  document.getElementById('resultCard').classList.remove('show');
+  showToast('已填入，可直接翻譯');
+}
+
+// ── 匯率 ──
+let currentRate = null;
+
+async function fetchRate() {
+  document.getElementById('rateDisplay').textContent = '載入中…';
+  try {
+    const res = await fetch('https://open.er-api.com/v6/latest/JPY');
+    const data = await res.json();
+    currentRate = data.rates.TWD;
+    document.getElementById('rateDisplay').textContent = currentRate.toFixed(4);
+    document.getElementById('rateTime').textContent = '更新時間：' + new Date().toLocaleTimeString('zh-TW');
+    renderQuickAmounts();
+  } catch(e) {
+    document.getElementById('rateDisplay').textContent = '無法取得';
+  }
+}
+
+function calcCurrency(from) {
+  if (!currentRate) return;
+  if (from === 'jpy') {
+    const jpy = parseFloat(document.getElementById('jpyInput').value);
+    document.getElementById('twdInput').value = isNaN(jpy) ? '' : (jpy * currentRate).toFixed(1);
+  } else {
+    const twd = parseFloat(document.getElementById('twdInput').value);
+    document.getElementById('jpyInput').value = isNaN(twd) ? '' : (twd / currentRate).toFixed(0);
+  }
+}
+
+function renderQuickAmounts() {
+  const amounts = [500, 1000, 3000, 5000, 10000, 30000];
+  document.getElementById('quickAmounts').innerHTML = amounts.map(jpy => `
+    <div style="background:var(--surface);border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:10px 12px;cursor:pointer"
+      onclick="document.getElementById('jpyInput').value=${jpy};calcCurrency('jpy')">
+      <div style="font-size:12px;color:var(--text2)">¥${jpy.toLocaleString()}</div>
+      <div style="font-size:15px;font-weight:600;color:var(--accent)">NT$${(jpy*currentRate).toFixed(0)}</div>
+    </div>`).join('');
 }
 
 let toastTimer;
