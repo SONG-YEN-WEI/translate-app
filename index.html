@@ -127,6 +127,7 @@
   <button class="tab" onclick="switchTab('image',this)">圖片</button>
   <button class="tab" onclick="switchTab('phrase',this)">常用句</button>
   <button class="tab" onclick="switchTab('currency',this)">匯率</button>
+  <button class="tab" onclick="switchTab('itinerary',this)">行程</button>
   <button class="tab" onclick="switchTab('history',this)">紀錄</button>
 </div>
 
@@ -235,6 +236,36 @@
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="quickAmounts"></div>
   </div>
 
+  <div id="tab-itinerary" style="display:none">
+    <div class="section-label" style="margin-top:4px">上傳行程表 .xlsx</div>
+    <input type="file" id="itineraryFile" accept=".xlsx,.xls" style="display:none" onchange="handleItineraryUpload(event)">
+    <div id="itineraryUploadArea" style="border:1.5px dashed var(--border2);border-radius:var(--radius);padding:24px 16px;text-align:center;cursor:pointer;background:var(--surface);margin-bottom:12px" onclick="document.getElementById('itineraryFile').click()">
+      <div style="font-size:28px;color:var(--accent2);margin-bottom:8px">📋</div>
+      <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px">點此上傳行程表</div>
+      <div style="font-size:12px;color:var(--text2)">支援 .xlsx / .xls 格式</div>
+    </div>
+    <div id="itineraryResult" style="display:none">
+      <div id="itineraryDayTabs" style="display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:12px"></div>
+      <div id="itineraryContent"></div>
+      <div style="margin-top:10px">
+        <textarea id="itineraryQuestion" placeholder="問關於行程的問題…&#10;例：第三天下午有什麼活動？" rows="2"
+          style="width:100%;background:var(--surface);border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:10px 12px;font-size:14px;font-family:inherit;color:var(--text);outline:none;resize:none;caret-color:var(--accent)"></textarea>
+        <button class="translate-btn" style="margin-top:8px" onclick="askItinerary()">
+          <i class="ti ti-message-circle"></i> 詢問行程
+        </button>
+      </div>
+      <div class="result-card" id="itineraryAnswerCard">
+        <div class="result-head">
+          <span class="result-badge">行程解答</span>
+          <div class="result-actions">
+            <button class="icon-btn" onclick="navigator.clipboard.writeText(document.getElementById('itineraryAnswer').textContent)" aria-label="複製"><i class="ti ti-copy"></i></button>
+          </div>
+        </div>
+        <div class="result-text" id="itineraryAnswer"></div>
+      </div>
+    </div>
+  </div>
+
   <div id="tab-history" style="display:none">
     <div class="section-label">翻譯紀錄</div>
     <div class="history-list" id="historyList"></div>
@@ -288,6 +319,9 @@
   <button class="nav-item" id="nav-currency" onclick="switchTab('currency',null,'nav-currency')">
     <i class="ti ti-currency-yen"></i><span>匯率</span>
   </button>
+  <button class="nav-item" id="nav-itinerary" onclick="switchTab('itinerary',null,'nav-itinerary')">
+    <i class="ti ti-calendar"></i><span>行程</span>
+  </button>
   <button class="nav-item" id="nav-history" onclick="switchTab('history',null,'nav-history')">
     <i class="ti ti-clock"></i><span>紀錄</span>
   </button>
@@ -296,8 +330,8 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = '2.8.2';
-const TABS = ['text','image','phrase','currency','history'];
+const APP_VERSION = '2.9.0';
+const TABS = ['text','image','phrase','currency','itinerary','history'];
 function getApiUrl() { return localStorage.getItem('workerUrl') || ''; }
 
 function switchTab(tab, tabEl, navId) {
@@ -571,7 +605,7 @@ function renderHistory(){
   const list=document.getElementById('historyList');
   if(!h.length){list.innerHTML='<div class="h-empty">尚無翻譯紀錄</div>';return;}
   list.innerHTML=h.map(item=>`
-    <div class="history-item" onclick="reuseHistory(${JSON.stringify(item.src).replace(/'/g,"&#39;")},${JSON.stringify(item.dir||'jp2zh')})">
+    <div class="history-item" data-src="${escHtml(item.src)}" data-dir="${escHtml(item.dir||'jp2zh')}" onclick="reuseHistory(this)">
       <div class="h-icon" style="font-size:16px">${item.type==='image'?'🖼':'🔤'}</div>
       <div class="h-texts">
         <div class="h-src">${escHtml(item.src)}</div>
@@ -579,7 +613,9 @@ function renderHistory(){
       </div>
     </div>`).join('');
 }
-function reuseHistory(src, dir){
+function reuseHistory(el){
+  const src = el.dataset.src;
+  const dir = el.dataset.dir;
   switchTab('text', null, 'nav-text');
   if (dir && dir !== translateDirection) swapLang();
   document.getElementById('jpInput').value = src;
@@ -711,6 +747,123 @@ function showToast(msg){
   el.textContent=msg; el.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer=setTimeout(()=>el.classList.remove('show'),2200);
+}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+// ── 行程表 ──
+let itineraryData = null;
+let currentDayIndex = 0;
+
+function handleItineraryUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const wb = XLSX.read(ev.target.result, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+      itineraryData = parseItinerary(rows);
+      document.getElementById('itineraryUploadArea').style.display = 'none';
+      document.getElementById('itineraryResult').style.display = 'block';
+      renderDayTabs();
+      renderDayContent(0);
+      showToast('行程表載入成功 ✓');
+    } catch(err) {
+      showToast('讀取失敗：' + err.message);
+    }
+    e.target.value = '';
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function parseItinerary(rows) {
+  if (!rows || rows.length < 2) return [];
+  const header = rows[0];
+  const days = [];
+  for (let col = 1; col < header.length; col++) {
+    if (!header[col]) continue;
+    const dayLabel = String(header[col]);
+    const slots = [];
+    for (let row = 1; row < rows.length; row++) {
+      const time = String(rows[row][0] || '').trim();
+      const cell = String(rows[row][col] || '').trim();
+      if (time && cell && !cell.match(/^💤+$/)) {
+        slots.push({ time, content: cell });
+      }
+    }
+    if (slots.length > 0) days.push({ label: dayLabel, slots });
+  }
+  return days;
+}
+
+function renderDayTabs() {
+  const el = document.getElementById('itineraryDayTabs');
+  el.innerHTML = itineraryData.map((d, i) => `
+    <button onclick="renderDayContent(${i})" id="daytab-${i}"
+      style="flex-shrink:0;padding:5px 12px;font-size:12px;border-radius:99px;border:none;cursor:pointer;font-family:inherit;
+      background:${i===0?'var(--accent)':'rgba(200,184,240,0.1)'};
+      color:${i===0?'#1a1a2e':'var(--text2)'};font-weight:${i===0?'600':'400'}">
+      ${d.label.replace(/（.*?）/,'').replace(/\(.*?\)/,'').trim()}
+    </button>`).join('');
+}
+
+function renderDayContent(idx) {
+  currentDayIndex = idx;
+  document.querySelectorAll('[id^="daytab-"]').forEach((btn, i) => {
+    btn.style.background = i === idx ? 'var(--accent)' : 'rgba(200,184,240,0.1)';
+    btn.style.color = i === idx ? '#1a1a2e' : 'var(--text2)';
+    btn.style.fontWeight = i === idx ? '600' : '400';
+  });
+  const day = itineraryData[idx];
+  const el = document.getElementById('itineraryContent');
+  el.innerHTML = `
+    <div style="font-size:14px;font-weight:600;color:var(--accent);margin-bottom:10px">${escHtml(day.label)}</div>
+    ${day.slots.map(s => `
+      <div style="display:flex;gap:10px;padding:8px 0;border-bottom:0.5px solid var(--border)">
+        <div style="font-size:11px;color:var(--text3);width:52px;flex-shrink:0;padding-top:2px">${escHtml(s.time)}</div>
+        <div style="font-size:13px;color:var(--text);line-height:1.5;flex:1">${escHtml(s.content).replace(/\n/g,'<br>')}</div>
+      </div>`).join('')}`;
+}
+
+async function askItinerary() {
+  const q = document.getElementById('itineraryQuestion').value.trim();
+  if (!q) { showToast('請輸入問題'); return; }
+  const key = getApiKey();
+  if (!key) { showToast('請先設定 API Key'); showSettings(); return; }
+  const apiUrl = getApiUrl();
+  if (!apiUrl) { showToast('請先設定 Worker 網址'); showSettings(); return; }
+
+  const btn = document.querySelector('#tab-itinerary .translate-btn');
+  btn.innerHTML = '<span class="spinner"></span> 分析中…';
+  btn.classList.add('loading');
+  document.getElementById('itineraryAnswerCard').classList.remove('show');
+
+  const allText = itineraryData.map(d =>
+    `【${d.label}】\n` + d.slots.map(s => `${s.time}：${s.content}`).join('\n')
+  ).join('\n\n');
+
+  try {
+    const res = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-5', max_tokens: 1000,
+        messages: [{ role: 'user', content:
+          `以下是旅遊行程表內容：\n\n${allText}\n\n請根據以上行程回答這個問題（用繁體中文回答）：${q}` }]
+      })
+    });
+    const data = await res.json();
+    const answer = (data.content || []).map(b => b.text || '').join('').trim();
+    document.getElementById('itineraryAnswer').textContent = answer;
+    document.getElementById('itineraryAnswerCard').classList.add('show');
+  } catch(err) {
+    document.getElementById('itineraryAnswer').textContent = '查詢失敗：' + err.message;
+    document.getElementById('itineraryAnswerCard').classList.add('show');
+  }
+  btn.innerHTML = '<i class="ti ti-message-circle"></i> 詢問行程';
+  btn.classList.remove('loading');
 }
 </script>
 </body>
