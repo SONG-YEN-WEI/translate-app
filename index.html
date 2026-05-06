@@ -143,6 +143,7 @@
   <button class="tab" onclick="switchTab('phrase',this)">常用句</button>
   <button class="tab" onclick="switchTab('currency',this)">匯率</button>
   <button class="tab" onclick="switchTab('itinerary',this)">行程</button>
+  <button class="tab" onclick="switchTab('links',this)">連結</button>
   <button class="tab" onclick="switchTab('memo',this)">備忘錄</button>
   <button class="tab" onclick="switchTab('history',this)">紀錄</button>
 </div>
@@ -282,6 +283,11 @@
     </div>
   </div>
 
+  <div id="tab-links" style="display:none">
+    <div class="section-label" style="margin-top:4px">行程相關連結</div>
+    <div id="linksContainer"></div>
+  </div>
+
   <div id="tab-memo" style="display:none">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px;margin-bottom:12px">
       <div class="section-label" style="margin:0">清單</div>
@@ -361,6 +367,9 @@
   <button class="nav-item" id="nav-itinerary" onclick="switchTab('itinerary',null,'nav-itinerary')">
     <i class="ti ti-calendar"></i><span>行程</span>
   </button>
+  <button class="nav-item" id="nav-links" onclick="switchTab('links',null,'nav-links')">
+    <i class="ti ti-link"></i><span>連結</span>
+  </button>
   <button class="nav-item" id="nav-memo" onclick="switchTab('memo',null,'nav-memo')">
     <i class="ti ti-checklist"></i><span>備忘錄</span>
   </button>
@@ -372,8 +381,8 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = '3.1.0';
-const TABS = ['text','image','phrase','currency','itinerary','memo','history'];
+const APP_VERSION = '3.2.0';
+const TABS = ['text','image','phrase','currency','itinerary','links','memo','history'];
 function getApiUrl() { return localStorage.getItem('workerUrl') || ''; }
 
 function switchTab(tab, tabEl, navId) {
@@ -387,6 +396,7 @@ function switchTab(tab, tabEl, navId) {
   if (tab==='currency' && !currentRate) fetchRate();
   if (tab==='phrase') renderPhrases();
   if (tab==='memo') renderMemo();
+  if (tab==='links') renderLinks();
 }
 let currentTab = 'text';
 let currentImageBase64 = null;
@@ -784,7 +794,87 @@ function renderQuickAmounts() {
     </div>`).join('');
 }
 
-let toastTimer;
+// ── 行程連結 ──
+const TRIP_LINKS = [
+  { cat: '第一天 5/13 — 鎌倉・橫濱', items: [
+    { title: '哥吉拉進駐羽田機場介紹', url: 'https://tokyo.letsgojp.com/archives/454671/', icon: '🦎' },
+    { title: '相鐵FRESA INN 大船站 Google Map', url: 'https://maps.app.goo.gl/aEcJpLzPsL1GGLEH7', icon: '🏨' },
+    { title: '圓覺寺介紹', url: 'https://immegumi.pixnet.net/blog/posts/8128235159', icon: '⛩️' },
+    { title: '建長寺介紹', url: 'https://www.bring-you.info/zh-tw/kenchoji-temple', icon: '⛩️' },
+    { title: '鶴岡八幡宮介紹', url: 'https://tw.wamazing.com/media/article/a-3632/', icon: '⛩️' },
+    { title: '小町通商店街介紹', url: 'https://bobbyfun.tw/komachidori/', icon: '🛍️' },
+    { title: '鎌倉→橫濱 路線 Google Map', url: 'https://maps.app.goo.gl/nbgJLySd4EmUCP999', icon: '🗺️' },
+    { title: '阿夫利 橫濱JOINUS店 Google Map', url: 'https://maps.app.goo.gl/d3noyDCWTeXe5NcE7', icon: '🍜' },
+    { title: '港未來21景點路線介紹', url: 'https://vocus.cc/article/66993009fd89780001cb5dd7', icon: '🌉' },
+  ]},
+  { cat: '第二天 5/14 — 江之島・鎌倉', items: [
+    { title: '新江之島水族館介紹', url: 'https://travel.yam.com/article/116948', icon: '🐟' },
+    { title: '江之島景點介紹', url: 'https://tokyo.letsgojp.com/archives/528563/', icon: '🏝️' },
+  ]},
+  { cat: '第三天 5/15 — 橫濱八景島・新橋', items: [
+    { title: '橫濱八景島海島樂園介紹', url: 'https://travelpark.tw/yokohama_seaparadise/', icon: '🎡' },
+    { title: '八景島 Bay Market Google Map', url: 'https://maps.app.goo.gl/hsuFmJtCwEdUt97B6', icon: '🗺️' },
+    { title: '相鐵夫里薩新橋西必亞酒店 Google Map', url: 'https://maps.app.goo.gl/6wCNHVwRYcoWkEtF9', icon: '🏨' },
+    { title: '矢場とん (豬排) Google Map', url: 'https://maps.app.goo.gl/Hda2ptn4gTEWndubA', icon: '🍱' },
+  ]},
+  { cat: '第四天 5/16 — 澀谷・明治神宮', items: [
+    { title: 'Bic Camera 澀谷東口 Google Map', url: 'https://maps.app.goo.gl/C61auydnySCciAz48', icon: '🛒' },
+    { title: 'Moheji 澀谷文字燒 Google Map', url: 'https://maps.app.goo.gl/gDjtn8oihoo8BoYg7', icon: '🍽️' },
+    { title: '明治神宮 Google Map', url: 'https://maps.app.goo.gl/U3q5wv8bKP9rWz7w8', icon: '⛩️' },
+    { title: '澀谷 SKY 展望台介紹', url: 'https://www.gltjp.com/zh-hant/article/item/20381/', icon: '🌆' },
+    { title: 'Shabu-Shabu Let Us 壽喜燒 Google Map', url: 'https://maps.app.goo.gl/cPwzVubP2SpjH5JC7', icon: '🍲' },
+    { title: '唐吉訶德 澀谷 Google Map', url: 'https://maps.app.goo.gl/DrKAzJBvsXtm1QHm6', icon: '🎪' },
+  ]},
+  { cat: '第五天 5/17 — 池袋・淺草', items: [
+    { title: '陽光水族館介紹', url: 'https://bobbyfun.tw/sunshine-aquarium/', icon: '🐙' },
+    { title: 'motto cafe 池袋店 (預約)', url: 'https://goukon.motto-cafe.com/tokyo/', icon: '☕' },
+    { title: '池袋周邊購物介紹', url: 'https://www.gltjp.com/zh-hant/article/item/20300/', icon: '🛍️' },
+    { title: '淺草寺攻略', url: 'https://www.gltjp.com/zh-hant/article/item/10068/', icon: '⛩️' },
+    { title: 'NEW PRASIDHA 印度咖哩 Google Map', url: 'https://maps.app.goo.gl/LMog9sNyvXZ8XGtG8', icon: '🍛' },
+    { title: '東京晴空塔 Google Map', url: 'https://maps.app.goo.gl/s7hg6ALCWaCGLX216', icon: '🗼' },
+    { title: '仲見世商店街 雜貨店 Google Map', url: 'https://maps.app.goo.gl/md3WprSMXCqRAtvf6', icon: '🏪' },
+  ]},
+  { cat: '第六天 5/18 — 原宿・新宿・谷中', items: [
+    { title: '羅多倫咖啡 新橋外堀通 Google Map', url: 'https://maps.app.goo.gl/VVLsgpkfEiMNatG99', icon: '☕' },
+    { title: 'KIDDYLAND 新宿 熊貓店介紹', url: 'https://smallplanet.co.jp/news/nishimura-yuji-honten/', icon: '🐼' },
+    { title: 'ONE PIECE BASE SHOP Google Map', url: 'https://maps.app.goo.gl/HTbuf2eMuVt2uMyt5', icon: '⚓' },
+    { title: 'UNIVERSAL MUSIC STORE 展覽 Instagram', url: 'https://www.instagram.com/p/DXeF-yegUg5/', icon: '🎵' },
+    { title: '妙義神社介紹 (貓咪御守)', url: 'https://bearlovefood.com/blog/post/myogi-tokyo', icon: '🐱' },
+    { title: '谷中銀座介紹 (貓咪雕像)', url: 'https://tw.savorjapan.com/contents/discover-oishii-japan/must-visit-spots-yanaka-ginza-cat-sculptures-popular-foods', icon: '🐱' },
+    { title: '新宿のけむり 居酒屋 Google Map', url: 'https://maps.app.goo.gl/DSX8LoncY4NE9i2G9', icon: '🍺' },
+    { title: '東京都廳展望台介紹', url: 'https://tokyo.letsgojp.com/archives/305532/', icon: '🏙️' },
+  ]},
+  { cat: '第七天 5/19 — 回程', items: [
+    { title: '麥當勞新橋日比谷口店 Google Map', url: 'https://maps.app.goo.gl/1r84dsXAMsRB1Npv9', icon: '🍔' },
+    { title: 'BOUL\'ANGE 新宿 Google Map', url: 'https://maps.app.goo.gl/bjz91M4dWSZBpNJ8A', icon: '🥐' },
+    { title: '成田機場伴手禮推薦', url: 'https://www.threads.com/@ji_ji8181/post/DShdF6YE8LL', icon: '✈️' },
+    { title: '日本超商甜點推薦', url: 'https://www.threads.com/@lazyyboy13/post/DVI9CyZgVRG', icon: '🍡' },
+    { title: '東京餐廳備案推薦', url: 'https://www.threads.com/@ann3283/post/DQQzq6Ek2t5', icon: '🍽️' },
+  ]},
+];
+
+function renderLinks() {
+  const el = document.getElementById('linksContainer');
+  if (!el) return;
+  el.innerHTML = TRIP_LINKS.map(cat => `
+    <div style="margin-bottom:16px">
+      <div class="section-label" style="margin-bottom:6px">${escHtml(cat.cat)}</div>
+      ${cat.items.map(link => `
+        <a href="${escHtml(link.url)}" target="_blank" rel="noopener"
+          style="display:flex;align-items:center;gap:10px;padding:10px 12px;
+          background:var(--surface);border:0.5px solid var(--border2);
+          border-radius:var(--radius-sm);margin-bottom:5px;text-decoration:none;">
+          <span style="font-size:16px;flex-shrink:0">${link.icon}</span>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:500;color:var(--text);
+              white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(link.title)}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:1px;
+              white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(new URL(link.url).hostname)}</div>
+          </div>
+          <i class="ti ti-external-link" style="font-size:14px;color:var(--text3);flex-shrink:0" aria-hidden="true"></i>
+        </a>`).join('')}
+    </div>`).join('');
+}
 function showToast(msg){
   const el=document.getElementById('toast');
   el.textContent=msg; el.classList.add('show');
