@@ -205,8 +205,8 @@
     <button class="save-btn" onclick="saveApiKey()">儲存金鑰</button>
     <div class="section-label" style="margin-top:24px">關於</div>
     <div class="settings-row" style="flex-direction:column;align-items:flex-start">
-      <div class="settings-label">日中翻譯 PWA</div>
-      <div class="settings-sub" id="versionInfo">翻譯由 Claude Sonnet 驅動 · 圖片處理在本機完成</div>
+      <div class="settings-label">日中翻譯 PWA v2.0</div>
+      <div class="settings-sub">翻譯由 Claude Sonnet 驅動 · 圖片處理在本機完成</div>
     </div>
     <div class="settings-row" style="justify-content:space-between">
       <div>
@@ -234,7 +234,6 @@
 
 <script>
 const API_URL = 'https://api.anthropic.com/v1/messages';
-const APP_VERSION = '2.1.0';
 let currentTab = 'text';
 let currentImageBase64 = null;
 let currentImageMime = 'image/jpeg';
@@ -244,7 +243,6 @@ window.addEventListener('load', () => {
   if (saved) document.getElementById('apiKeyInput').value = saved;
   renderHistory();
   checkOffline();
-  document.getElementById('versionInfo').textContent = `v${APP_VERSION} · 翻譯由 Claude Sonnet 驅動 · 圖片處理在本機完成`;
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js')
       .then(() => console.log('SW registered ✓'))
