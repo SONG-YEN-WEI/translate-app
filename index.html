@@ -203,6 +203,16 @@
       <input class="api-input" id="apiKeyInput" type="password" placeholder="sk-ant-api03-…">
     </div>
     <button class="save-btn" onclick="saveApiKey()">儲存金鑰</button>
+
+    <div class="section-label" style="margin-top:24px">Cloudflare Worker 網址</div>
+    <div class="settings-row" style="flex-direction:column;align-items:flex-start">
+      <div>
+        <div class="settings-label">Worker URL</div>
+        <div class="settings-sub">部署後貼上網址，格式：https://xxx.workers.dev</div>
+      </div>
+      <input class="api-input" id="workerUrlInput" type="url" placeholder="https://your-worker.workers.dev">
+    </div>
+    <button class="save-btn" onclick="saveWorkerUrl()">儲存 Worker 網址</button>
     <div class="section-label" style="margin-top:24px">關於</div>
     <div class="settings-row" style="flex-direction:column;align-items:flex-start">
       <div class="settings-label">日中翻譯 PWA</div>
@@ -233,8 +243,10 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const API_URL = 'https://api.anthropic.com/v1/messages';
-const APP_VERSION = '2.1.0';
+const APP_VERSION = '2.2.0';
+function getApiUrl() {
+  return localStorage.getItem('workerUrl') || 'https://api.anthropic.com/v1/messages';
+}
 let currentTab = 'text';
 let currentImageBase64 = null;
 let currentImageMime = 'image/jpeg';
@@ -242,6 +254,8 @@ let currentImageMime = 'image/jpeg';
 window.addEventListener('load', () => {
   const saved = localStorage.getItem('apiKey');
   if (saved) document.getElementById('apiKeyInput').value = saved;
+  const savedWorker = localStorage.getItem('workerUrl');
+  if (savedWorker) document.getElementById('workerUrlInput').value = savedWorker;
   renderHistory();
   checkOffline();
   document.getElementById('versionInfo').textContent = `v${APP_VERSION} · 翻譯由 Claude Sonnet 驅動 · 圖片處理在本機完成`;
@@ -263,6 +277,12 @@ function saveApiKey() {
   if (!key) { showToast('請輸入 API Key'); return; }
   localStorage.setItem('apiKey', key);
   showToast('已儲存 ✓');
+}
+function saveWorkerUrl() {
+  const url = document.getElementById('workerUrlInput').value.trim();
+  if (!url) { showToast('請輸入 Worker 網址'); return; }
+  localStorage.setItem('workerUrl', url);
+  showToast('Worker 網址已儲存 ✓');
 }
 
 function switchTab(tab, tabEl, navId) {
@@ -309,14 +329,20 @@ async function doTranslate() {
   if (!input) { showToast('請輸入日文'); return; }
   const key = getApiKey();
   if (!key) { showToast('請先在設定中輸入 API Key'); showSettings(); return; }
+
   const btn = document.getElementById('translateBtn');
   btn.classList.add('loading');
   btn.innerHTML = '<span class="spinner"></span> 翻譯中…';
   document.getElementById('resultCard').classList.remove('show');
+
   try {
-    const res = await fetch(API_URL, {
+    const apiUrl = getApiUrl();
+    const isWorker = !apiUrl.includes('anthropic.com/v1');
+    const headers = {'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'};
+    if (!isWorker) headers['anthropic-dangerous-direct-browser-access'] = 'true';
+    const res = await fetch(apiUrl, {
       method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      headers,
       body: JSON.stringify({
         model:'claude-sonnet-4-20250514', max_tokens:1000,
         messages:[{role:'user',content:`你是專業的日中翻譯員，請將以下日文翻譯成自然流暢的繁體中文。\n只回傳 JSON（不含 markdown 代碼框），格式：\n{"translation":"翻譯結果","note":"語氣或文化補充，若無則空字串"}\n\n日文：${input}`}]
@@ -324,7 +350,7 @@ async function doTranslate() {
     });
     if (!res.ok) {
       const errBody = await res.text();
-      throw new Error('API '+res.status+' — '+errBody.slice(0,200));
+      throw new Error('HTTP '+res.status+'\n'+errBody.slice(0,300));
     }
     const data = await res.json();
     const parsed = JSON.parse((data.content||[]).map(b=>b.text||'').join('').replace(/```json|```/g,'').trim());
@@ -389,9 +415,13 @@ async function doImageTranslate() {
   btn.classList.add('loading'); btn.innerHTML='<span class="spinner"></span> 辨識中…';
   document.getElementById('imgResultCard').classList.remove('show');
   try {
-    const res=await fetch(API_URL,{
+    const apiUrl = getApiUrl();
+    const isWorker = !apiUrl.includes('anthropic.com/v1');
+    const headers = {'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'};
+    if (!isWorker) headers['anthropic-dangerous-direct-browser-access'] = 'true';
+    const res=await fetch(apiUrl,{
       method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      headers,
       body:JSON.stringify({
         model:'claude-sonnet-4-20250514',max_tokens:1500,
         messages:[{role:'user',content:[
