@@ -296,7 +296,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = '2.8.0';
+const APP_VERSION = '2.8.2';
 const TABS = ['text','image','phrase','currency','history'];
 function getApiUrl() { return localStorage.getItem('workerUrl') || ''; }
 
@@ -580,10 +580,12 @@ function renderHistory(){
     </div>`).join('');
 }
 function reuseHistory(src, dir){
-  switchTab('text');
+  switchTab('text', null, 'nav-text');
   if (dir && dir !== translateDirection) swapLang();
-  document.getElementById('jpInput').value=src; updateCount();
+  document.getElementById('jpInput').value = src;
+  updateCount();
   document.getElementById('resultCard').classList.remove('show');
+  showToast('已填入，點立即翻譯');
 }
 function clearHistory(){
   if(!confirm('確定要清除所有紀錄？'))return;
@@ -646,21 +648,23 @@ function renderPhrases() {
   el.innerHTML = PHRASES.map(cat => `
     <div style="margin-bottom:16px">
       <div class="section-label" style="margin-bottom:6px">${cat.cat}</div>
-      ${cat.items.map(p => `
-        <div class="history-item" style="flex-direction:column;align-items:flex-start;gap:3px" onclick="usePhrase(${JSON.stringify(p.jp)})">
+      ${cat.items.map((p,i) => `
+        <div class="history-item" style="flex-direction:column;align-items:flex-start;gap:3px"
+          data-jp="${escHtml(p.jp)}" data-zh="${escHtml(p.zh)}" onclick="usePhrase(this)">
           <div style="font-size:14px;color:var(--text)">${escHtml(p.zh)}</div>
           <div style="font-size:12px;color:var(--text2)">${escHtml(p.jp)}</div>
         </div>`).join('')}
     </div>`).join('');
 }
 
-function usePhrase(jp) {
+function usePhrase(el) {
+  const jp = el.dataset.jp;
   switchTab('text', null, 'nav-text');
   if (translateDirection !== 'jp2zh') swapLang();
   document.getElementById('jpInput').value = jp;
   updateCount();
   document.getElementById('resultCard').classList.remove('show');
-  showToast('已填入，可直接翻譯');
+  showToast('已填入，點立即翻譯');
 }
 
 // ── 匯率 ──
