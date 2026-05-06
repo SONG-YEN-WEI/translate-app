@@ -399,7 +399,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = '3.5.0';
+const APP_VERSION = '3.5.1';
 const TABS = ['text','image','phrase','currency','itinerary','links','coupon','photos','memo','history'];
 function getApiUrl() { return localStorage.getItem('workerUrl') || ''; }
 
@@ -1023,17 +1023,6 @@ async function askItinerary() {
 // ── 備忘錄 ──
 const DEFAULT_MEMO = [
   {
-    id: 1000001, title: '🎫 東京優惠券清單', icon: '🎫', type: 'notes',
-    items: [
-      { id: 1000101, text: '【LikeJapan APP】出發前下載好，結帳時開 app 給店員掃碼', done: false },
-      { id: 1000102, text: '唐吉訶德 — 免稅10% + 滿¥1萬再7%OFF（澀谷/池袋）', done: false },
-      { id: 1000103, text: 'Bic Camera — 電器免稅10%+7%、藥妝免稅10%+5%（有效至2026/8/31）', done: false },
-      { id: 1000104, text: 'Welcia 藥妝 — 免稅10% + 滿¥5萬再8%OFF（有效至2026/9/30）', done: false },
-      { id: 1000105, text: 'NINJA WiFi — 優惠碼 likeni1212 享八折 / eSIM 同享八折', done: false },
-      { id: 1000106, text: '大國藥妝線上 — 折扣碼 LJXDK2026，滿¥1萬減¥1200（至2026/12/31）', done: false },
-    ]
-  },
-  {
     id: 1000002, title: '✈️ 出發前注意事項', icon: '📝', type: 'notes',
     items: [
       { id: 1000201, text: '辦旅遊保險', done: false },
@@ -1220,95 +1209,80 @@ document.addEventListener('DOMContentLoaded', () => {
 // ── 優惠券 ──
 const COUPONS = [
   {
-    name: 'LikeJapan APP',
+    name: 'LikeJapan 優惠券 APP',
     icon: '📱',
-    discount: '多家店折扣',
-    validity: '各店不同',
-    how: '出發前下載 LikeJapan APP，在店內結帳時開啟 APP 給店員掃碼即可',
-    url: 'https://app.likejapan.com/',
-    urlText: '下載 LikeJapan APP',
-    note: '含唐吉訶德、Welcia、大國藥妝等多家店折扣券',
+    desc: '所有優惠券集中在此 APP，結帳時開啟出示給店員掃碼',
+    url: 'https://app.likejapan.com/zh-hk',
   },
   {
-    name: '唐吉訶德（Donki）',
+    name: '唐吉訶德',
     icon: '🎪',
-    discount: '免稅10% + 滿¥1萬再7%OFF',
-    validity: '長期有效',
-    how: '在 LikeJapan APP 內開啟唐吉訶德優惠券，結帳時出示給店員掃碼。需持護照免稅結帳。滿¥10,000（未稅）可用5%，滿¥30,000可用7%',
-    url: 'https://app.likejapan.com/',
-    urlText: '開啟優惠券',
-    note: '煙酒、POSA卡不適用',
+    desc: '免稅10% + 額外折扣，全日本分店適用',
+    url: 'https://japanportal.donki-global.com/coupon/cp002.html',
+  },
+  {
+    name: '松本清藥妝',
+    icon: '💊',
+    desc: '免稅10% + 最高7%OFF，出示優惠券掃碼',
+    url: 'https://app.likejapan.com/zh-hk/coupon/%E8%97%A5%E5%A6%9D%E5%BA%97%E6%9D%BE%E6%9C%AC%E6%B8%85%E5%84%AA%E6%83%A0%E5%88%B8',
+  },
+  {
+    name: '東京站一番街',
+    icon: '🗼',
+    desc: '500日圓優惠券，東京車站地下商店街使用',
+    url: 'https://app.likejapan.com/zh-hk/coupon/tokyo-station-ichibangai-coupon',
+  },
+  {
+    name: 'EDION 愛電王',
+    icon: '🔌',
+    desc: '免稅10% + 7%OFF，全國約1200家分店',
+    url: 'https://app.likejapan.com/zh-hk/coupon/EDION-7percent-discount-coupon',
   },
   {
     name: 'Bic Camera',
-    icon: '🔌',
-    discount: '電器免稅10%+7%、藥妝免稅10%+5%',
-    validity: '至 2026/8/31',
-    how: '在 LikeJapan APP 內開啟 Bic Camera 優惠券，結帳時出示給店員掃碼，並出示護照享免稅',
-    url: 'https://www.biccamera.com/bc/c/info/tourist/index.jsp',
-    urlText: 'Bic Camera 優惠頁',
-    note: '行程第三天東京車站有樂町店、第六天新宿東口店都有分店',
+    icon: '📷',
+    desc: '電器免稅10%+7%、藥妝免稅10%+5%',
+    url: 'https://app.likejapan.com/zh-hk/coupon/BIC-CAMERA-%E5%84%AA%E6%83%A0%E5%88%B8',
   },
   {
-    name: 'Welcia 藥妝',
-    icon: '💊',
-    discount: '免稅10% + 滿¥5萬再8%OFF',
-    validity: '至 2026/9/30',
-    how: '在 LikeJapan APP 開啟 Welcia 優惠券，結帳免稅時出示給店員。需為持短期滯留簽證的外國遊客',
-    url: 'https://app.likejapan.com/',
-    urlText: '開啟優惠券',
-    note: '滿¥1萬 3%OFF、滿¥3萬 5%OFF、滿¥5萬 8%OFF',
+    name: '鶴羽藥妝 TSURUHA',
+    icon: '🦢',
+    desc: '免稅10% + 最高7%OFF',
+    url: 'https://app.likejapan.com/zh-hk/coupon/tsuruha-drug',
   },
   {
-    name: 'NINJA WiFi',
-    icon: '📡',
-    discount: 'WiFi蛋/eSIM 八折',
-    validity: '長期有效',
-    how: '在 NINJA WiFi 官網預訂時輸入優惠碼 likeni1212 享八折。eSIM 同樣適用，SHOGUN SIM 享九折',
-    url: 'https://www.ninjawifi.com/',
-    urlText: 'NINJA WiFi 官網',
-    note: '出發前先預訂，機場領取或郵寄到府',
+    name: 'SUGI 藥局',
+    icon: '🌿',
+    desc: '免稅10% + 額外折扣優惠',
+    url: 'https://app.likejapan.com/zh-hk/coupon/sugi-pharmacy',
   },
   {
-    name: '大國藥妝（線上）',
-    icon: '🛒',
-    discount: '滿¥1萬減¥1,200',
-    validity: '至 2026/12/31',
-    how: '在大國藥妝官方全球旗艦店線上購物，購物車內點「選擇優惠券」，輸入折扣碼 LJXDK2026',
-    url: 'https://www.daikokudrug.com/',
-    urlText: '大國藥妝線上店',
-    note: '單筆不累計，無法與其他券併用。可直送台灣',
+    name: '札幌藥妝',
+    icon: '❄️',
+    desc: '免稅10% + 最高7%OFF，東京等全國有分店',
+    url: 'https://app.likejapan.com/zh-hk/coupon/sapporo-drug',
   },
 ];
 
 function renderCoupon() {
   const el = document.getElementById('couponList');
   if (!el) return;
-  el.innerHTML = COUPONS.map(c => `
-    <div style="background:var(--surface);border:0.5px solid var(--border2);border-radius:var(--radius);margin-bottom:12px;overflow:hidden">
-      <div style="padding:12px 14px;border-bottom:0.5px solid var(--border)">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-          <span style="font-size:20px">${c.icon}</span>
-          <div style="flex:1">
-            <div style="font-size:15px;font-weight:600;color:var(--text)">${escHtml(c.name)}</div>
-            <div style="font-size:12px;color:var(--accent);margin-top:2px">${escHtml(c.discount)}</div>
-          </div>
-          <span style="font-size:10px;color:var(--text3);white-space:nowrap">${escHtml(c.validity)}</span>
-        </div>
+  el.innerHTML = `
+    <div style="background:var(--surface);border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:12px;font-size:13px;color:var(--text2);line-height:1.6">
+      點下方任一優惠券連結，開啟後出示給店員掃碼，並出示護照享免稅優惠
+    </div>` +
+  COUPONS.map(c => `
+    <a href="${escHtml(c.url)}" target="_blank" rel="noopener"
+      style="display:flex;align-items:center;gap:12px;padding:12px 14px;
+      background:var(--surface);border:0.5px solid var(--border2);
+      border-radius:var(--radius-sm);margin-bottom:6px;text-decoration:none;">
+      <span style="font-size:24px;flex-shrink:0">${c.icon}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:14px;font-weight:600;color:var(--text)">${escHtml(c.name)}</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:2px">${escHtml(c.desc)}</div>
       </div>
-      <div style="padding:10px 14px">
-        <div style="font-size:11px;font-weight:600;color:var(--text2);letter-spacing:0.05em;margin-bottom:4px">使用方式</div>
-        <div style="font-size:13px;color:var(--text);line-height:1.6;margin-bottom:8px">${escHtml(c.how)}</div>
-        ${c.note ? `<div style="font-size:12px;color:var(--text2);background:var(--surface2);border-radius:var(--radius-sm);padding:6px 10px;margin-bottom:8px">⚠️ ${escHtml(c.note)}</div>` : ''}
-        <a href="${escHtml(c.url)}" target="_blank" rel="noopener"
-          style="display:flex;align-items:center;justify-content:center;gap:6px;padding:9px;
-          background:var(--surface2);border:0.5px solid var(--border2);border-radius:var(--radius-sm);
-          color:var(--accent);font-size:13px;font-weight:500;text-decoration:none">
-          <i class="ti ti-external-link" style="font-size:14px" aria-hidden="true"></i>
-          ${escHtml(c.urlText)}
-        </a>
-      </div>
-    </div>`).join('');
+      <i class="ti ti-external-link" style="font-size:16px;color:var(--text3);flex-shrink:0" aria-hidden="true"></i>
+    </a>`).join('');
 }
 
 // ── 行程圖片 ──
