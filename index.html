@@ -96,7 +96,26 @@
   .update-banner.show { display: flex; }
   .update-banner-text { flex: 1; font-size: 13px; }
   .update-banner-btn { background: rgba(255,255,255,0.2); border: none; color: #fff; font-size: 13px; font-weight: 600; padding: 6px 14px; border-radius: 99px; cursor: pointer; white-space: nowrap; font-family: inherit; }
-  .spinner { width: 18px; height: 18px; border: 2px solid rgba(200,184,240,0.2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; }
+  .route-day-tabs { display:flex; gap:6px; overflow-x:auto; padding-bottom:6px; margin-bottom:12px; }
+  .route-day-tabs::-webkit-scrollbar { display:none; }
+  .route-day-btn { flex-shrink:0; padding:6px 12px; font-size:12px; border-radius:99px; border:none; cursor:pointer; font-family:inherit; background:rgba(200,184,240,0.1); color:var(--text2); transition:all 0.15s; }
+  .route-day-btn.active { background:var(--accent); color:#1a1a2e; font-weight:600; }
+  .route-card { background:var(--surface); border:0.5px solid var(--border2); border-radius:var(--radius); padding:14px; margin-bottom:10px; }
+  .route-header { font-size:13px; font-weight:600; color:var(--accent); margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; }
+  .route-open-all { font-size:11px; background:var(--surface2); border:0.5px solid var(--border2); border-radius:99px; padding:4px 10px; color:var(--text2); cursor:pointer; text-decoration:none; white-space:nowrap; }
+  .route-timeline { position:relative; padding-left:20px; }
+  .route-timeline::before { content:''; position:absolute; left:6px; top:8px; bottom:8px; width:1.5px; background:linear-gradient(to bottom, var(--accent), var(--border2)); border-radius:99px; }
+  .route-stop { position:relative; margin-bottom:10px; }
+  .route-dot { position:absolute; left:-20px; top:4px; width:13px; height:13px; border-radius:50%; border:2px solid var(--surface); flex-shrink:0; }
+  .route-stop-content { background:var(--surface2); border-radius:var(--radius-sm); padding:10px 12px; }
+  .route-stop-time { font-size:10px; color:var(--text3); margin-bottom:3px; letter-spacing:0.05em; }
+  .route-stop-name { font-size:14px; font-weight:600; color:var(--text); margin-bottom:4px; }
+  .route-stop-note { font-size:11px; color:var(--text2); line-height:1.5; margin-bottom:6px; }
+  .route-stop-btns { display:flex; gap:6px; flex-wrap:wrap; }
+  .route-map-btn { display:inline-flex; align-items:center; gap:4px; font-size:11px; padding:4px 10px; border-radius:99px; text-decoration:none; font-family:inherit; border:none; cursor:pointer; white-space:nowrap; }
+  .route-map-btn.primary { background:rgba(200,184,240,0.15); color:var(--accent); }
+  .route-map-btn.nav { background:rgba(78,203,141,0.15); color:#4ecb8d; }
+  .route-map-btn.transit { background:rgba(108,143,240,0.15); color:#6c8ff0; } border: 2px solid rgba(200,184,240,0.2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; }
   @keyframes spin { to { transform: rotate(360deg); } }
   .memo-list { background: var(--surface); border: 0.5px solid var(--border2); border-radius: var(--radius); margin-bottom: 12px; overflow: hidden; }
   .memo-list-header { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-bottom: 0.5px solid var(--border); }
@@ -256,33 +275,8 @@
   </div>
 
   <div id="tab-itinerary" style="display:none">
-    <div class="section-label" style="margin-top:4px">上傳行程表 .xlsx</div>
-    <input type="file" id="itineraryFile" accept=".xlsx,.xls" style="display:none" onchange="handleItineraryUpload(event)">
-    <div id="itineraryUploadArea" style="border:1.5px dashed var(--border2);border-radius:var(--radius);padding:24px 16px;text-align:center;cursor:pointer;background:var(--surface);margin-bottom:12px" onclick="document.getElementById('itineraryFile').click()">
-      <div style="font-size:28px;color:var(--accent2);margin-bottom:8px">📋</div>
-      <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px">點此上傳行程表</div>
-      <div style="font-size:12px;color:var(--text2)">支援 .xlsx / .xls 格式</div>
-    </div>
-    <div id="itineraryResult" style="display:none">
-      <div id="itineraryDayTabs" style="display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:12px"></div>
-      <div id="itineraryContent"></div>
-      <div style="margin-top:10px">
-        <textarea id="itineraryQuestion" placeholder="問關於行程的問題…&#10;例：第三天下午有什麼活動？" rows="2"
-          style="width:100%;background:var(--surface);border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:10px 12px;font-size:14px;font-family:inherit;color:var(--text);outline:none;resize:none;caret-color:var(--accent)"></textarea>
-        <button class="translate-btn" style="margin-top:8px" onclick="askItinerary()">
-          <i class="ti ti-message-circle"></i> 詢問行程
-        </button>
-      </div>
-      <div class="result-card" id="itineraryAnswerCard">
-        <div class="result-head">
-          <span class="result-badge">行程解答</span>
-          <div class="result-actions">
-            <button class="icon-btn" onclick="navigator.clipboard.writeText(document.getElementById('itineraryAnswer').textContent)" aria-label="複製"><i class="ti ti-copy"></i></button>
-          </div>
-        </div>
-        <div class="result-text" id="itineraryAnswer"></div>
-      </div>
-    </div>
+    <div class="route-day-tabs" id="routeDayTabs"></div>
+    <div id="routeContent"></div>
   </div>
 
   <div id="tab-links" style="display:none">
@@ -399,7 +393,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = '3.5.2';
+const APP_VERSION = '3.6.0';
 const TABS = ['text','image','phrase','currency','itinerary','links','coupon','photos','memo','history'];
 function getApiUrl() { return localStorage.getItem('workerUrl') || ''; }
 
@@ -417,6 +411,7 @@ function switchTab(tab, tabEl, navId) {
   if (tab==='links') renderLinks();
   if (tab==='coupon') renderCoupon();
   if (tab==='photos') renderPhotos();
+  if (tab==='itinerary') initRoute();
 }
 let currentTab = 'text';
 let currentImageBase64 = null;
@@ -1066,7 +1061,171 @@ async function askItinerary() {
 }
 </script>
 <script>
-// ── 備忘錄 ──
+// ── 路線圖資料 ──
+const ROUTE_DAYS = [
+  {
+    date: '5/13', label: '鎌倉・橫濱', color: '#9b6cf0',
+    stops: [
+      { time: '05:00', name: '羽田機場 第3航廈', icon: '✈️', note: '哥吉拉展示！3F出發大廳、2F抵達大廳', lat: 35.5494, lng: 139.7798, type: 'transport' },
+      { time: '07:00', name: '相鐵FRESA INN 大船站', icon: '🏨', note: '寄放行李，步行約2分鐘', lat: 35.3212, lng: 139.5327, type: 'hotel' },
+      { time: '07:30', name: "Wendy's First Kitchen 大船店", icon: '🍳', note: '早餐', lat: 35.3215, lng: 139.5335, type: 'food' },
+      { time: '08:30', name: '圓覺寺', icon: '⛩️', note: '08:30-16:00 · 北鎌倉站步行1分鐘', lat: 35.3388, lng: 139.5378, type: 'spot' },
+      { time: '10:30', name: '建長寺', icon: '⛩️', note: '08:30-16:30 · 公車約4分，40分一班', lat: 35.3363, lng: 139.5458, type: 'spot' },
+      { time: '12:00', name: '鶴岡八幡宮', icon: '⛩️', note: '步行約10分鐘 · 鎌倉國寶館看武士刀', lat: 35.3277, lng: 139.5563, type: 'spot' },
+      { time: '15:00', name: '小町通商店街', icon: '🛍️', note: '草莓冰淇淋・大佛燒・抹茶冰淇淋・橡子共和國', lat: 35.3238, lng: 139.5562, type: 'shop' },
+      { time: '18:00', name: '阿夫利 橫濱JOINUS店', icon: '🍜', note: '拉麵・沾麵 · B1，先去機器點餐後排隊', lat: 35.4657, lng: 139.6241, type: 'food' },
+      { time: '19:00', name: '港未來21', icon: '🌉', note: '夜景路線：地標大廈・帆船日本丸・太空世界・萬國橋・紅磚倉庫', lat: 35.4573, lng: 139.6328, type: 'spot' },
+      { time: '21:00', name: '相鐵FRESA INN 大船站', icon: '🏨', note: '回飯店', lat: 35.3212, lng: 139.5327, type: 'hotel' },
+    ]
+  },
+  {
+    date: '5/14', label: '江之島・鎌倉', color: '#4ecb8d',
+    stops: [
+      { time: '09:00', name: '新江之島水族館', icon: '🐟', note: '09:00-17:00 · 已訂票', lat: 35.3018, lng: 139.4877, type: 'spot' },
+      { time: '12:00', name: '海鮮丼 とびっちょ 本店', icon: '🍣', note: '抽號碼牌排隊', lat: 35.2993, lng: 139.4834, type: 'food' },
+      { time: '13:00', name: '江島神社 邊津宮', icon: '⛩️', note: '步行約8分鐘', lat: 35.2990, lng: 139.4804, type: 'spot' },
+      { time: '13:30', name: '江之島海蠟燭展望燈塔', icon: '🕯️', note: '套票含', lat: 35.2980, lng: 139.4776, type: 'spot' },
+      { time: '14:30', name: '江之島岩屋', icon: '🦇', note: '套票含', lat: 35.2960, lng: 139.4743, type: 'spot' },
+      { time: '16:00', name: '稚兒之淵', icon: '🌅', note: '看夕陽！五月落日約18:28', lat: 35.2955, lng: 139.4733, type: 'spot' },
+      { time: '17:00', name: '弁財天仲見世商店街', icon: '🛍️', note: '買紀念品・吃小吃', lat: 35.2997, lng: 139.4826, type: 'shop' },
+      { time: '19:00', name: '相鐵FRESA INN 大船站', icon: '🏨', note: '回飯店', lat: 35.3212, lng: 139.5327, type: 'hotel' },
+    ]
+  },
+  {
+    date: '5/15', label: '八景島・新橋', color: '#f0b429',
+    stops: [
+      { time: '09:00', name: '橫濱八景島海島樂園', icon: '🎡', note: '10:00-18:00 · 已訂票 · 下載八景島APP', lat: 35.3198, lng: 139.6368, type: 'spot' },
+      { time: '13:00', name: '八景島 Bay Market', icon: '🍽️', note: '園區午餐', lat: 35.3204, lng: 139.6375, type: 'food' },
+      { time: '16:00', name: '相鐵夫里薩新橋西必亞酒店', icon: '🏨', note: '放行李，步行約1分鐘', lat: 35.6659, lng: 139.7577, type: 'hotel' },
+      { time: '17:00', name: '矢場とん 東京車站', icon: '🍖', note: '豬排 · 已預約', lat: 35.6813, lng: 139.7670, type: 'food' },
+      { time: '18:00', name: 'JUMP Shop 東京車站一番街', icon: '🎌', note: 'B1 · 橡子共和國也在附近', lat: 35.6812, lng: 139.7671, type: 'shop' },
+      { time: '19:00', name: 'BicCamera 有樂町店', icon: '📷', note: '買耳機', lat: 35.6745, lng: 139.7622, type: 'shop' },
+      { time: '19:30', name: '治一郎 KITTE 丸の内店', icon: '🍮', note: '買布丁', lat: 35.6793, lng: 139.7637, type: 'food' },
+    ]
+  },
+  {
+    date: '5/16', label: '澀谷・明治神宮', color: '#e05555',
+    stops: [
+      { time: '08:30', name: '羅多倫咖啡 新橋外堀通店', icon: '☕', note: '早餐，步行約2分鐘', lat: 35.6667, lng: 139.7587, type: 'food' },
+      { time: '10:00', name: 'Bic Camera 澀谷東口', icon: '📷', note: '10:00-22:00', lat: 35.6590, lng: 139.7027, type: 'shop' },
+      { time: '10:30', name: 'MAGNET by SHIBUYA109', icon: '🏢', note: '10:00-21:00', lat: 35.6598, lng: 139.6988, type: 'shop' },
+      { time: '12:00', name: 'Moheji Shibuya Scramble Square', icon: '🍳', note: '文字燒午餐，無法訂位', lat: 35.6584, lng: 139.7027, type: 'food' },
+      { time: '14:00', name: '明治神宮', icon: '⛩️', note: '步行約7分鐘', lat: 35.6763, lng: 139.6993, type: 'spot' },
+      { time: '16:00', name: '澀谷 SKY', icon: '🌆', note: '10:00-22:30 · 最晚入場21:20 · 已訂票', lat: 35.6576, lng: 139.7018, type: 'spot' },
+      { time: '18:00', name: 'Shabu-Shabu Let Us 澀谷', icon: '🍲', note: '壽喜燒晚餐 · 已預約', lat: 35.6596, lng: 139.7000, type: 'food' },
+      { time: '20:00', name: '唐吉訶德 澀谷', icon: '🎪', note: '步行約1分鐘', lat: 35.6601, lng: 139.6988, type: 'shop' },
+      { time: '21:00', name: '相鐵夫里薩新橋西必亞酒店', icon: '🏨', note: '回飯店', lat: 35.6659, lng: 139.7577, type: 'hotel' },
+    ]
+  },
+  {
+    date: '5/17', label: '池袋・淺草', color: '#4a6fd4',
+    stops: [
+      { time: '08:00', name: '麥當勞新橋日比谷口店', icon: '🍔', note: '早餐，步行約2分鐘', lat: 35.6660, lng: 139.7568, type: 'food' },
+      { time: '09:00', name: '陽光水族館', icon: '🐙', note: '09:30-18:00 · 已訂票', lat: 35.7282, lng: 139.7197, type: 'spot' },
+      { time: '12:00', name: 'motto cafe 池袋店', icon: '☕', note: '聯誼咖啡廳 · 已預約', lat: 35.7298, lng: 139.7146, type: 'food' },
+      { time: '13:00', name: 'animate 池袋總店', icon: '🎌', note: '動漫週邊', lat: 35.7305, lng: 139.7154, type: 'shop' },
+      { time: '13:30', name: 'Gashapon Ikebukuro Main Store', icon: '🎮', note: '扭蛋', lat: 35.7299, lng: 139.7141, type: 'shop' },
+      { time: '15:00', name: '淺草寺', icon: '⛩️', note: '步行約2分鐘', lat: 35.7148, lng: 139.7967, type: 'spot' },
+      { time: '17:00', name: '仲見世商店街', icon: '🛍️', note: '買伴飯粉，只開到六點！', lat: 35.7125, lng: 139.7963, type: 'shop' },
+      { time: '18:00', name: 'NEW PRASIDHA Asakusa', icon: '🍛', note: '印度咖哩晚餐 · 已預約 · 要吃烤餅！', lat: 35.7118, lng: 139.7970, type: 'food' },
+      { time: '19:00', name: '東京晴空塔', icon: '🗼', note: '周邊: JUMP SHOP・橡子共和國・LIFE超市', lat: 35.7101, lng: 139.8107, type: 'spot' },
+      { time: '21:00', name: '相鐵夫里薩新橋西必亞酒店', icon: '🏨', note: '回飯店', lat: 35.6659, lng: 139.7577, type: 'hotel' },
+    ]
+  },
+  {
+    date: '5/18', label: '原宿・新宿・谷中', color: '#e060c0',
+    stops: [
+      { time: '08:00', name: "BOUL'ANGE 新宿", icon: '🥐', note: '早餐麵包店', lat: 35.6896, lng: 139.7006, type: 'food' },
+      { time: '11:00', name: 'KIDDYLAND Shinjuku 熊貓店', icon: '🐼', note: '10:30-20:30 · 附近有新宿東口の猫', lat: 35.6918, lng: 139.7019, type: 'shop' },
+      { time: '12:00', name: 'ONE PIECE BASE SHOP', icon: '⚓', note: '11:00-20:00 · BicCamera新宿東口也在附近', lat: 35.6921, lng: 139.7014, type: 'shop' },
+      { time: '14:00', name: 'UNIVERSAL MUSIC STORE HARAJUKU', icon: '🎵', note: '展覽在1F・3F', lat: 35.6702, lng: 139.7027, type: 'spot' },
+      { time: '15:00', name: '妙義神社', icon: '🐱', note: '貓咪御守！！', lat: 35.7349, lng: 139.7493, type: 'spot' },
+      { time: '16:00', name: '谷中銀座', icon: '🐱', note: '貓咪雕像・商店 · 約五點半要搭車', lat: 35.7267, lng: 139.7628, type: 'spot' },
+      { time: '18:00', name: '新宿のけむり', icon: '🍺', note: '居酒屋晚餐 · 要吃提燈！ · 已預約', lat: 35.6903, lng: 139.7003, type: 'food' },
+      { time: '20:00', name: '東京都廳展望台', icon: '🏙️', note: '免費 · 最晚入場21:00 · 只有南展望室有夜景', lat: 35.6896, lng: 139.6921, type: 'spot' },
+      { time: '21:30', name: '相鐵夫里薩新橋西必亞酒店', icon: '🏨', note: '回飯店', lat: 35.6659, lng: 139.7577, type: 'hotel' },
+    ]
+  },
+  {
+    date: '5/19', label: '回程', color: '#8890b8',
+    stops: [
+      { time: '07:00', name: '相鐵夫里薩新橋西必亞酒店', icon: '🏨', note: '出發，步行約4分鐘到新橋站', lat: 35.6659, lng: 139.7577, type: 'hotel' },
+      { time: '08:32', name: '成田國際機場', icon: '✈️', note: '11:50起飛 · 可問JR小吊飾・限定西瓜卡\nLeTAO THENOIR 紅茶巧克力夾心餅乾（入境後免稅店）', lat: 35.7653, lng: 140.3856, type: 'transport' },
+    ]
+  }
+];
+
+const STOP_COLORS = { spot:'#c8b8f0', food:'#f0b429', shop:'#4ecb8d', hotel:'#6c8ff0', transport:'#8890b8' };
+
+let currentRouteDay = 0;
+
+function initRoute() {
+  const tabs = document.getElementById('routeDayTabs');
+  const today = new Date().toISOString().slice(5,10).replace('-','/');
+  tabs.innerHTML = ROUTE_DAYS.map((d,i) => `
+    <button class="route-day-btn ${i===0?'active':''}" onclick="switchRouteDay(${i},this)"
+      style="${d.date===today?'border:1.5px solid '+d.color:''}">
+      ${d.date}
+    </button>`).join('');
+  renderRouteDay(0);
+}
+
+function switchRouteDay(idx, btn) {
+  currentRouteDay = idx;
+  document.querySelectorAll('.route-day-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderRouteDay(idx);
+}
+
+function renderRouteDay(idx) {
+  const day = ROUTE_DAYS[idx];
+  const el = document.getElementById('routeContent');
+
+  // Build Google Maps multi-stop URL
+  const waypoints = day.stops.map(s => `${s.lat},${s.lng}`);
+  const origin = waypoints[0];
+  const dest = waypoints[waypoints.length-1];
+  const mid = waypoints.slice(1,-1).join('|');
+  const allUrl = `https://www.google.com/maps/dir/${waypoints.join('/')}`;
+
+  el.innerHTML = `
+    <div class="route-card">
+      <div class="route-header">
+        <span style="color:${day.color}">📍 ${day.date} ${day.label}</span>
+        <a href="${allUrl}" target="_blank" rel="noopener" class="route-open-all">
+          🗺️ 全日路線
+        </a>
+      </div>
+      <div class="route-timeline">
+        ${day.stops.map((s,i) => {
+          const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${s.lat},${s.lng}`;
+          const navUrl = `https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}&travelmode=transit`;
+          const prevStop = i > 0 ? day.stops[i-1] : null;
+          const transitUrl = prevStop
+            ? `https://www.google.com/maps/dir/?api=1&origin=${prevStop.lat},${prevStop.lng}&destination=${s.lat},${s.lng}&travelmode=transit`
+            : null;
+          return `
+          <div class="route-stop">
+            <div class="route-dot" style="background:${STOP_COLORS[s.type]||'var(--accent)'}"></div>
+            <div class="route-stop-content">
+              <div class="route-stop-time">${s.time}</div>
+              <div class="route-stop-name">${s.icon} ${escHtml(s.name)}</div>
+              ${s.note ? `<div class="route-stop-note">${escHtml(s.note).replace(/\n/g,'<br>')}</div>` : ''}
+              <div class="route-stop-btns">
+                <a href="${mapsUrl}" target="_blank" rel="noopener" class="route-map-btn primary">
+                  📍 在地圖查看
+                </a>
+                <a href="${navUrl}" target="_blank" rel="noopener" class="route-map-btn nav">
+                  🚃 導航到這
+                </a>
+                ${transitUrl ? `<a href="${transitUrl}" target="_blank" rel="noopener" class="route-map-btn transit">↗ 從上一站</a>` : ''}
+              </div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+}
 const DEFAULT_MEMO = [
   {
     id: 1000002, title: '✈️ 出發前注意事項', icon: '📝', type: 'notes',
