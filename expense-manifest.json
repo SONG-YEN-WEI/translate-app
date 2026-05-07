@@ -2,15 +2,15 @@
   "name": "東京記帳 2025",
   "short_name": "東京記帳",
   "description": "旅遊記帳分帳工具",
-  "start_url": "./expense.html",
-  "scope": "./",
+  "start_url": "/travel-expense/expense.html",
+  "scope": "/travel-expense/",
   "display": "standalone",
   "background_color": "#0a0a1a",
   "theme_color": "#0a0a1a",
   "orientation": "portrait",
   "prefer_related_applications": false,
   "icons": [
-    { "src": "expense-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "expense-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    { "src": "/travel-expense/expense-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/travel-expense/expense-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }
