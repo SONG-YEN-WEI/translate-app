@@ -157,10 +157,8 @@
 </header>
 
 <div class="tabs">
-  <button class="tab active" onclick="switchTab('text',this)">文字</button>
-  <button class="tab" onclick="switchTab('image',this)">圖片</button>
-  <button class="tab" onclick="switchTab('phrase',this)">常用句</button>
-  <button class="tab" onclick="switchTab('currency',this)">匯率</button>
+  <button class="tab active" onclick="switchTab('translate',this)">翻譯</button>
+  <button class="tab" onclick="switchTab('tools',this)">工具</button>
   <button class="tab" onclick="switchTab('itinerary',this)">行程</button>
   <button class="tab" onclick="switchTab('links',this)">連結</button>
   <button class="tab" onclick="switchTab('coupon',this)">優惠券</button>
@@ -172,111 +170,159 @@
 <div class="scroll-body">
   <div id="offlineBadge" class="offline-badge">目前離線 — 需要網路才能翻譯</div>
 
-  <div id="tab-text">
-    <div class="lang-bar" style="margin-top:4px">
-      <div class="lang-pill" id="langFrom">🇯🇵 日文</div>
-      <button class="icon-btn" onclick="swapLang()" aria-label="切換方向" style="flex-shrink:0;border-radius:99px"><i class="ti ti-arrows-exchange"></i></button>
-      <div class="lang-pill" id="langTo">🇹🇼 繁體中文</div>
+  <div id="tab-translate">
+    <!-- 文字/圖片子切換 -->
+    <div style="display:flex;gap:6px;margin-bottom:10px;margin-top:4px">
+      <button id="transBtnText" onclick="switchTranslateMode('text',this)"
+        style="flex:1;padding:7px;font-size:12px;font-weight:600;font-family:inherit;border:none;border-radius:var(--radius-sm);cursor:pointer;background:var(--accent);color:#1a1a2e">
+        ⌨️ 文字
+      </button>
+      <button id="transBtnImage" onclick="switchTranslateMode('image',this)"
+        style="flex:1;padding:7px;font-size:12px;font-weight:600;font-family:inherit;border:none;border-radius:var(--radius-sm);cursor:pointer;background:var(--surface);color:var(--text2);border:0.5px solid var(--border2)">
+        📷 圖片
+      </button>
     </div>
-    <div class="input-card">
-      <textarea id="jpInput" placeholder="輸入文字…" rows="4" oninput="updateCount()"></textarea>
-      <div class="input-footer">
-        <button class="icon-btn" onclick="clearText()" aria-label="清除"><i class="ti ti-x"></i></button>
-        <button class="icon-btn" onclick="pasteClipboard()" aria-label="貼上"><i class="ti ti-clipboard"></i></button>
-        <button class="icon-btn" onclick="pasteDemo()" aria-label="範例"><i class="ti ti-bulb"></i></button>
-        <span class="char-count" id="charCount">0</span>
+    <!-- 文字翻譯 -->
+    <div id="translateTextMode">
+      <div class="lang-bar">
+        <div class="lang-pill" id="langFrom">🇯🇵 日文</div>
+        <button class="icon-btn" onclick="swapLang()" aria-label="切換方向" style="flex-shrink:0;border-radius:99px"><i class="ti ti-arrows-exchange"></i></button>
+        <div class="lang-pill" id="langTo">🇹🇼 繁體中文</div>
       </div>
-    </div>
-    <button class="translate-btn" id="translateBtn" onclick="doTranslate()">
-      <i class="ti ti-language"></i> 立即翻譯
-    </button>
-    <div class="result-card" id="resultCard">
-      <div class="result-head">
-        <span class="result-badge">翻譯結果</span>
-        <div class="result-actions">
-          <button class="icon-btn" onclick="toggleNote()" id="noteToggleBtn" aria-label="顯示提示" title="顯示/隱藏補充說明"><i class="ti ti-info-circle"></i></button>
-          <button class="icon-btn" onclick="copyResult()" aria-label="複製"><i class="ti ti-copy"></i></button>
-          <button class="icon-btn" onclick="speakResult()" aria-label="朗讀"><i class="ti ti-volume"></i></button>
+      <div class="input-card">
+        <textarea id="jpInput" placeholder="輸入文字…" rows="4" oninput="updateCount()"></textarea>
+        <div class="input-footer">
+          <button class="icon-btn" onclick="clearText()" aria-label="清除"><i class="ti ti-x"></i></button>
+          <button class="icon-btn" onclick="pasteClipboard()" aria-label="貼上"><i class="ti ti-clipboard"></i></button>
+          <button class="icon-btn" onclick="pasteDemo()" aria-label="範例"><i class="ti ti-bulb"></i></button>
+          <span class="char-count" id="charCount">0</span>
         </div>
       </div>
-      <div class="result-text" id="resultText"></div>
-      <div class="result-note" id="resultNote" style="display:none"></div>
+      <button class="translate-btn" id="translateBtn" onclick="doTranslate()">
+        <i class="ti ti-language"></i> 立即翻譯
+      </button>
+      <div class="result-card" id="resultCard">
+        <div class="result-head">
+          <span class="result-badge">翻譯結果</span>
+          <div class="result-actions">
+            <button class="icon-btn" onclick="toggleNote()" id="noteToggleBtn" aria-label="顯示提示"><i class="ti ti-info-circle"></i></button>
+            <button class="icon-btn" onclick="copyResult()" aria-label="複製"><i class="ti ti-copy"></i></button>
+            <button class="icon-btn" onclick="speakResult()" aria-label="朗讀"><i class="ti ti-volume"></i></button>
+          </div>
+        </div>
+        <div class="result-text" id="resultText"></div>
+        <div class="result-note" id="resultNote" style="display:none"></div>
+      </div>
+    </div>
+    <!-- 圖片辨識 -->
+    <div id="translateImageMode" style="display:none">
+      <input type="file" id="fileInput" accept="image/*" onchange="handleImageUpload(event)">
+      <input type="file" id="cameraInput" accept="image/*" capture="environment" onchange="handleImageUpload(event)">
+      <div class="img-btn-row" id="imgBtnRow">
+        <button class="img-source-btn" onclick="document.getElementById('cameraInput').click()">
+          <i class="ti ti-camera"></i><span>拍照</span><small>直接開啟相機</small>
+        </button>
+        <button class="img-source-btn" onclick="document.getElementById('fileInput').click()">
+          <i class="ti ti-photo"></i><span>從相簿選取</span><small>選取已拍好的圖片</small>
+        </button>
+      </div>
+      <div class="preview-wrap" id="previewWrap">
+        <img id="previewImg" class="preview-img" alt="預覽">
+        <button class="preview-retake" onclick="resetImage()">
+          <i class="ti ti-refresh" style="font-size:13px"></i> 重新選取
+        </button>
+      </div>
+      <button class="translate-btn" id="imgTranslateBtn" onclick="doImageTranslate()" style="display:none">
+        <i class="ti ti-photo-scan"></i> 辨識並翻譯
+      </button>
+      <div class="result-card" id="imgResultCard">
+        <div class="result-head">
+          <span class="result-badge">辨識結果</span>
+          <div class="result-actions">
+            <button class="icon-btn" onclick="copyImgResult()" aria-label="複製"><i class="ti ti-copy"></i></button>
+          </div>
+        </div>
+        <div class="result-text" id="imgResultText"></div>
+        <div class="result-note" id="imgResultNote" style="display:none"></div>
+      </div>
     </div>
   </div>
 
-  <div id="tab-image" style="display:none">
-    <input type="file" id="fileInput" accept="image/*" onchange="handleImageUpload(event)">
-    <input type="file" id="cameraInput" accept="image/*" capture="environment" onchange="handleImageUpload(event)">
-    <div class="img-btn-row" id="imgBtnRow">
-      <button class="img-source-btn" onclick="document.getElementById('cameraInput').click()">
-        <i class="ti ti-camera"></i>
-        <span>拍照</span>
-        <small>直接開啟相機</small>
+  <!-- 工具 tab（常用句 + 匯率） -->
+  <div id="tab-tools" style="display:none">
+    <div style="display:flex;gap:6px;margin-bottom:10px;margin-top:4px">
+      <button id="toolsBtnCurrency" onclick="switchToolsMode('currency',this)"
+        style="flex:1;padding:7px;font-size:12px;font-weight:600;font-family:inherit;border:none;border-radius:var(--radius-sm);cursor:pointer;background:var(--accent);color:#1a1a2e">
+        ¥ 匯率
       </button>
-      <button class="img-source-btn" onclick="document.getElementById('fileInput').click()">
-        <i class="ti ti-photo"></i>
-        <span>從相簿選取</span>
-        <small>選取已拍好的圖片</small>
+      <button id="toolsBtnPhrase" onclick="switchToolsMode('phrase',this)"
+        style="flex:1;padding:7px;font-size:12px;font-weight:600;font-family:inherit;border:none;border-radius:var(--radius-sm);cursor:pointer;background:var(--surface);color:var(--text2);border:0.5px solid var(--border2)">
+        💬 常用句
       </button>
     </div>
-    <div class="preview-wrap" id="previewWrap">
-      <img id="previewImg" class="preview-img" alt="預覽">
-      <button class="preview-retake" onclick="resetImage()">
-        <i class="ti ti-refresh" style="font-size:13px"></i> 重新選取
-      </button>
-    </div>
-    <button class="translate-btn" id="imgTranslateBtn" onclick="doImageTranslate()" style="display:none">
-      <i class="ti ti-photo-scan"></i> 辨識並翻譯
-    </button>
-    <div class="result-card" id="imgResultCard">
-      <div class="result-head">
-        <span class="result-badge">辨識結果</span>
-        <div class="result-actions">
-          <button class="icon-btn" onclick="copyImgResult()" aria-label="複製"><i class="ti ti-copy"></i></button>
+    <div id="toolsCurrencyMode">
+      <div class="section-label">日圓 ⇄ 台幣換算</div>
+      <div class="input-card" style="margin-bottom:10px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="font-size:13px;color:var(--text2);width:30px">¥</span>
+          <input id="jpyInput" type="number" placeholder="日圓金額" oninput="calcCurrency('jpy')"
+            style="flex:1;background:none;border:none;outline:none;font-size:18px;color:var(--text);font-family:inherit;">
+        </div>
+        <div style="height:0.5px;background:var(--border)"></div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
+          <span style="font-size:13px;color:var(--text2);width:30px">NT$</span>
+          <input id="twdInput" type="number" placeholder="台幣金額" oninput="calcCurrency('twd')"
+            style="flex:1;background:none;border:none;outline:none;font-size:18px;color:var(--text);font-family:inherit;">
         </div>
       </div>
-      <div class="result-text" id="imgResultText"></div>
-      <div class="result-note" id="imgResultNote" style="display:none"></div>
-    </div>
-  </div>
-
-  <!-- 常用句 tab -->
-  <div id="tab-phrase" style="display:none">
-    <div class="section-label" style="margin-top:4px">點句子自動填入翻譯框</div>
-    <div id="phraseList"></div>
-  </div>
-
-  <!-- 匯率 tab -->
-  <div id="tab-currency" style="display:none">
-    <div class="section-label" style="margin-top:4px">日圓 ⇄ 台幣換算</div>
-    <div class="input-card" style="margin-bottom:10px">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-        <span style="font-size:13px;color:var(--text2);width:30px">¥</span>
-        <input id="jpyInput" type="number" placeholder="日圓金額" oninput="calcCurrency('jpy')"
-          style="flex:1;background:none;border:none;outline:none;font-size:18px;color:var(--text);font-family:inherit;">
+      <div style="background:var(--surface);border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:13px;color:var(--text2)">匯率（¥1 = NT$）</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span id="rateDisplay" style="font-size:15px;font-weight:600;color:var(--accent)">載入中…</span>
+          <button class="icon-btn" onclick="fetchRate()" aria-label="更新匯率"><i class="ti ti-refresh"></i></button>
+        </div>
       </div>
-      <div style="height:0.5px;background:var(--border)"></div>
-      <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
-        <span style="font-size:13px;color:var(--text2);width:30px">NT$</span>
-        <input id="twdInput" type="number" placeholder="台幣金額" oninput="calcCurrency('twd')"
-          style="flex:1;background:none;border:none;outline:none;font-size:18px;color:var(--text);font-family:inherit;">
-      </div>
+      <div id="rateTime" style="font-size:11px;color:var(--text3);text-align:right;margin-bottom:14px"></div>
+      <div class="section-label">常用金額換算</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="quickAmounts"></div>
     </div>
-    <div style="background:var(--surface);border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
-      <span style="font-size:13px;color:var(--text2)">匯率（¥1 = NT$）</span>
-      <div style="display:flex;align-items:center;gap:8px">
-        <span id="rateDisplay" style="font-size:15px;font-weight:600;color:var(--accent)">載入中…</span>
-        <button class="icon-btn" onclick="fetchRate()" aria-label="更新匯率"><i class="ti ti-refresh"></i></button>
-      </div>
+    <div id="toolsPhraseMode" style="display:none">
+      <div class="section-label">點句子自動填入翻譯框</div>
+      <div id="phraseList"></div>
     </div>
-    <div id="rateTime" style="font-size:11px;color:var(--text3);text-align:right;margin-bottom:14px"></div>
-    <div class="section-label">常用金額換算</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="quickAmounts"></div>
   </div>
 
   <div id="tab-itinerary" style="display:none">
-    <div class="route-day-tabs" id="routeDayTabs"></div>
-    <div id="routeContent"></div>
+    <!-- 切換按鈕 -->
+    <div style="display:flex;gap:6px;margin-top:4px;margin-bottom:12px">
+      <button id="viewBtnText" onclick="switchItineraryView('text',this)"
+        style="flex:1;padding:7px;font-size:12px;font-weight:600;font-family:inherit;border:none;border-radius:var(--radius-sm);cursor:pointer;background:var(--accent);color:#1a1a2e">
+        📋 文字版
+      </button>
+      <button id="viewBtnRoute" onclick="switchItineraryView('route',this)"
+        style="flex:1;padding:7px;font-size:12px;font-weight:600;font-family:inherit;border:none;border-radius:var(--radius-sm);cursor:pointer;background:var(--surface);color:var(--text2);border:0.5px solid var(--border2)">
+        🗺️ 路線圖
+      </button>
+    </div>
+    <!-- 文字模式（預設） -->
+    <div id="itineraryTextView">
+      <div class="section-label" style="margin-top:0">上傳行程表 .XLSX</div>
+      <input type="file" id="itineraryFile" accept=".xlsx,.xls" style="display:none" onchange="handleItineraryUpload(event)">
+      <div id="itineraryUploadArea" style="border:1.5px dashed var(--border2);border-radius:var(--radius);padding:20px 16px;text-align:center;cursor:pointer;background:var(--surface);margin-bottom:12px" onclick="document.getElementById('itineraryFile').click()">
+        <div style="font-size:26px;color:var(--accent2);margin-bottom:6px">📋</div>
+        <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px">點此上傳行程表</div>
+        <div style="font-size:12px;color:var(--text2)">支援 .xlsx / .xls 格式</div>
+      </div>
+      <div id="itineraryResult" style="display:none">
+        <div id="itineraryDayTabs" style="display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:12px"></div>
+        <div id="itineraryContent"></div>
+      </div>
+    </div>
+    <!-- 路線圖模式 -->
+    <div id="itineraryRouteView" style="display:none">
+      <div class="route-day-tabs" id="routeDayTabs"></div>
+      <div id="routeContent"></div>
+    </div>
   </div>
 
   <div id="tab-links" style="display:none">
@@ -358,17 +404,11 @@
 </div>
 
 <nav class="bottom-nav">
-  <button class="nav-item active" id="nav-text" onclick="switchTab('text',null,'nav-text')">
-    <i class="ti ti-keyboard"></i><span>文字</span>
+  <button class="nav-item active" id="nav-translate" onclick="switchTab('translate',null,'nav-translate')">
+    <i class="ti ti-language"></i><span>翻譯</span>
   </button>
-  <button class="nav-item" id="nav-image" onclick="switchTab('image',null,'nav-image')">
-    <i class="ti ti-camera"></i><span>圖片</span>
-  </button>
-  <button class="nav-item" id="nav-phrase" onclick="switchTab('phrase',null,'nav-phrase')">
-    <i class="ti ti-messages"></i><span>常用句</span>
-  </button>
-  <button class="nav-item" id="nav-currency" onclick="switchTab('currency',null,'nav-currency')">
-    <i class="ti ti-currency-yen"></i><span>匯率</span>
+  <button class="nav-item" id="nav-tools" onclick="switchTab('tools',null,'nav-tools')">
+    <i class="ti ti-tool"></i><span>工具</span>
   </button>
   <button class="nav-item" id="nav-itinerary" onclick="switchTab('itinerary',null,'nav-itinerary')">
     <i class="ti ti-calendar"></i><span>行程</span>
@@ -393,8 +433,41 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = '3.6.0';
-const TABS = ['text','image','phrase','currency','itinerary','links','coupon','photos','memo','history'];
+const APP_VERSION = '3.7.2';
+const TABS = ['translate','tools','itinerary','links','coupon','photos','memo','history'];
+
+let translateMode = 'text'; // 'text' | 'image'
+let toolsMode = 'currency';  // 'phrase' | 'currency'
+
+function switchTranslateMode(mode, btn) {
+  translateMode = mode;
+  document.getElementById('translateTextMode').style.display = mode==='text' ? 'block' : 'none';
+  document.getElementById('translateImageMode').style.display = mode==='image' ? 'block' : 'none';
+  ['Text','Image'].forEach(v => {
+    const b = document.getElementById('transBtnText'.replace('Text', v === 'Text' ? 'Text' : 'Image'));
+    if (!b) return;
+  });
+  document.getElementById('transBtnText').style.cssText = mode==='text'
+    ? 'flex:1;padding:7px;font-size:12px;font-weight:600;font-family:inherit;border:none;border-radius:var(--radius-sm);cursor:pointer;background:var(--accent);color:#1a1a2e'
+    : 'flex:1;padding:7px;font-size:12px;font-weight:600;font-family:inherit;border:none;border-radius:var(--radius-sm);cursor:pointer;background:var(--surface);color:var(--text2);border:0.5px solid var(--border2)';
+  document.getElementById('transBtnImage').style.cssText = mode==='image'
+    ? 'flex:1;padding:7px;font-size:12px;font-weight:600;font-family:inherit;border:none;border-radius:var(--radius-sm);cursor:pointer;background:var(--accent);color:#1a1a2e'
+    : 'flex:1;padding:7px;font-size:12px;font-weight:600;font-family:inherit;border:none;border-radius:var(--radius-sm);cursor:pointer;background:var(--surface);color:var(--text2);border:0.5px solid var(--border2)';
+}
+
+function switchToolsMode(mode, btn) {
+  toolsMode = mode;
+  document.getElementById('toolsPhraseMode').style.display = mode==='phrase' ? 'block' : 'none';
+  document.getElementById('toolsCurrencyMode').style.display = mode==='currency' ? 'block' : 'none';
+  document.getElementById('toolsBtnPhrase').style.cssText = mode==='phrase'
+    ? 'flex:1;padding:7px;font-size:12px;font-weight:600;font-family:inherit;border:none;border-radius:var(--radius-sm);cursor:pointer;background:var(--accent);color:#1a1a2e'
+    : 'flex:1;padding:7px;font-size:12px;font-weight:600;font-family:inherit;border:none;border-radius:var(--radius-sm);cursor:pointer;background:var(--surface);color:var(--text2);border:0.5px solid var(--border2)';
+  document.getElementById('toolsBtnCurrency').style.cssText = mode==='currency'
+    ? 'flex:1;padding:7px;font-size:12px;font-weight:600;font-family:inherit;border:none;border-radius:var(--radius-sm);cursor:pointer;background:var(--accent);color:#1a1a2e'
+    : 'flex:1;padding:7px;font-size:12px;font-weight:600;font-family:inherit;border:none;border-radius:var(--radius-sm);cursor:pointer;background:var(--surface);color:var(--text2);border:0.5px solid var(--border2)';
+  if (mode==='currency' && !currentRate) fetchRate();
+  if (mode==='phrase') renderPhrases();
+}
 function getApiUrl() { return localStorage.getItem('workerUrl') || ''; }
 
 function switchTab(tab, tabEl, navId) {
@@ -405,13 +478,11 @@ function switchTab(tab, tabEl, navId) {
   document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
   document.getElementById(navId||'nav-'+tab).classList.add('active');
   if (tab==='history') renderHistory();
-  if (tab==='currency' && !currentRate) fetchRate();
-  if (tab==='phrase') renderPhrases();
+  if (tab==='tools') { if (toolsMode==='phrase') renderPhrases(); else if (!currentRate) fetchRate(); }
   if (tab==='memo') renderMemo();
   if (tab==='links') renderLinks();
   if (tab==='coupon') renderCoupon();
   if (tab==='photos') renderPhotos();
-  if (tab==='itinerary') initRoute();
 }
 let currentTab = 'text';
 let currentImageBase64 = null;
@@ -730,7 +801,7 @@ function renderHistory(){
 function reuseHistory(el){
   const src = el.dataset.src;
   const dir = el.dataset.dir;
-  switchTab('text', null, 'nav-text');
+  switchTab('translate', null, 'nav-translate'); switchTranslateMode('text', document.getElementById('transBtnText'));
   if (dir && dir !== translateDirection) swapLang();
   document.getElementById('jpInput').value = src;
   updateCount();
@@ -809,7 +880,7 @@ function renderPhrases() {
 
 function usePhrase(el) {
   const jp = el.dataset.jp;
-  switchTab('text', null, 'nav-text');
+  switchTab('translate', null, 'nav-translate'); switchTranslateMode('text', document.getElementById('transBtnText'));
   if (translateDirection !== 'jp2zh') swapLang();
   document.getElementById('jpInput').value = jp;
   updateCount();
@@ -1157,17 +1228,37 @@ const ROUTE_DAYS = [
 
 const STOP_COLORS = { spot:'#c8b8f0', food:'#f0b429', shop:'#4ecb8d', hotel:'#6c8ff0', transport:'#8890b8' };
 
+let itineraryView = 'text'; // 預設文字版
 let currentRouteDay = 0;
 
-function initRoute() {
+function switchItineraryView(view, btn) {
+  itineraryView = view;
+  document.getElementById('itineraryTextView').style.display = view==='text' ? 'block' : 'none';
+  document.getElementById('itineraryRouteView').style.display = view==='route' ? 'block' : 'none';
+  ['text','route'].forEach(v => {
+    const b = document.getElementById('viewBtn'+v.charAt(0).toUpperCase()+v.slice(1));
+    if (!b) return;
+    if (v===view) {
+      b.style.background='var(--accent)'; b.style.color='#1a1a2e'; b.style.border='none';
+    } else {
+      b.style.background='var(--surface)'; b.style.color='var(--text2)'; b.style.border='0.5px solid var(--border2)';
+    }
+  });
+  if (view==='route') {
+    // setTimeout 確保 DOM display:block 生效後再渲染
+    setTimeout(() => initRouteMap(), 0);
+  }
+}
+
+function initRouteMap() {
   const tabs = document.getElementById('routeDayTabs');
   const today = new Date().toISOString().slice(5,10).replace('-','/');
   tabs.innerHTML = ROUTE_DAYS.map((d,i) => `
-    <button class="route-day-btn ${i===0?'active':''}" onclick="switchRouteDay(${i},this)"
+    <button class="route-day-btn ${i===currentRouteDay?'active':''}" onclick="switchRouteDay(${i},this)"
       style="${d.date===today?'border:1.5px solid '+d.color:''}">
       ${d.date}
     </button>`).join('');
-  renderRouteDay(0);
+  renderRouteDay(currentRouteDay);
 }
 
 function switchRouteDay(idx, btn) {
@@ -1226,6 +1317,47 @@ function renderRouteDay(idx) {
       </div>
     </div>`;
 }
+
+let currentTextDay = 0;
+
+function renderTextView() {
+  // Build day tabs for text view
+  const tabs = document.getElementById('itineraryDayTabs');
+  if (!tabs.innerHTML) {
+    tabs.innerHTML = ROUTE_DAYS.map((d,i) => `
+      <button onclick="switchTextDay(${i},this)"
+        style="flex-shrink:0;padding:6px 12px;font-size:12px;border-radius:99px;border:none;cursor:pointer;font-family:inherit;
+        background:${i===0?'var(--accent)':'rgba(200,184,240,0.1)'};
+        color:${i===0?'#1a1a2e':'var(--text2)'};
+        font-weight:${i===0?'600':'400'}">
+        ${d.date}
+      </button>`).join('');
+  }
+  renderTextDay(0);
+}
+
+function switchTextDay(idx, btn) {
+  currentTextDay = idx;
+  document.querySelectorAll('#itineraryDayTabs button').forEach((b,i) => {
+    b.style.background = i===idx ? 'var(--accent)' : 'rgba(200,184,240,0.1)';
+    b.style.color = i===idx ? '#1a1a2e' : 'var(--text2)';
+    b.style.fontWeight = i===idx ? '600' : '400';
+  });
+  renderTextDay(idx);
+}
+
+function renderTextDay(idx) {
+  const day = ROUTE_DAYS[idx];
+  const el = document.getElementById('itineraryTextContent');
+  el.innerHTML = `
+    <div style="font-size:14px;font-weight:600;color:var(--accent);margin-bottom:10px">${escHtml(day.date + '（' + ['二','三','四','五','六','日','一'][idx] + '）')} ${escHtml(day.label)}</div>
+    ${day.stops.map(s => `
+      <div style="display:flex;gap:10px;padding:8px 0;border-bottom:0.5px solid var(--border)">
+        <div style="font-size:11px;color:var(--text3);width:52px;flex-shrink:0;padding-top:2px">${escHtml(s.time)}</div>
+        <div style="font-size:13px;color:var(--text);line-height:1.5;flex:1">${escHtml(s.icon + ' ' + s.name + (s.note ? '\n' + s.note : '')).replace(/\n/g,'<br>')}</div>
+      </div>`).join('')}`;
+}
+
 const DEFAULT_MEMO = [
   {
     id: 1000002, title: '✈️ 出發前注意事項', icon: '📝', type: 'notes',
