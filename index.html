@@ -314,6 +314,10 @@
         <div style="font-size:12px;color:var(--text2)">支援 .xlsx / .xls 格式</div>
       </div>
       <div id="itineraryResult" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div class="section-label" style="margin:0">行程表</div>
+          <button onclick="clearItinerary()" style="background:none;border:0.5px solid var(--border2);border-radius:99px;padding:3px 10px;font-size:11px;color:var(--text3);cursor:pointer;font-family:inherit">重新上傳</button>
+        </div>
         <div id="itineraryDayTabs" style="display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:12px"></div>
         <div id="itineraryContent"></div>
       </div>
@@ -433,7 +437,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const APP_VERSION = '3.7.2';
+const APP_VERSION = '3.7.3';
 const TABS = ['translate','tools','itinerary','links','coupon','photos','memo','history'];
 
 let translateMode = 'text'; // 'text' | 'image'
@@ -1020,6 +1024,24 @@ function showToast(msg){
 let itineraryData = null;
 let currentDayIndex = 0;
 
+// 從 localStorage 恢復行程資料
+(function loadSavedItinerary() {
+  try {
+    const saved = localStorage.getItem('itineraryData');
+    if (saved) {
+      itineraryData = JSON.parse(saved);
+      document.addEventListener('DOMContentLoaded', () => {
+        const uploadArea = document.getElementById('itineraryUploadArea');
+        const result = document.getElementById('itineraryResult');
+        if (uploadArea) uploadArea.style.display = 'none';
+        if (result) result.style.display = 'block';
+        renderDayTabs();
+        renderDayContent(currentDayIndex);
+      });
+    }
+  } catch(e) {}
+})();
+
 function handleItineraryUpload(e) {
   const file = e.target.files[0];
   if (!file) return;
@@ -1030,6 +1052,8 @@ function handleItineraryUpload(e) {
       const ws = wb.Sheets[wb.SheetNames[0]];
       const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
       itineraryData = parseItinerary(rows);
+      // 儲存到 localStorage
+      try { localStorage.setItem('itineraryData', JSON.stringify(itineraryData)); } catch(e) {}
       document.getElementById('itineraryUploadArea').style.display = 'none';
       document.getElementById('itineraryResult').style.display = 'block';
       renderDayTabs();
@@ -1043,8 +1067,14 @@ function handleItineraryUpload(e) {
   reader.readAsArrayBuffer(file);
 }
 
+function clearItinerary() {
+  itineraryData = null;
+  localStorage.removeItem('itineraryData');
+  document.getElementById('itineraryUploadArea').style.display = 'block';
+  document.getElementById('itineraryResult').style.display = 'none';
+}
+
 function parseItinerary(rows) {
-  if (!rows || rows.length < 2) return [];
   const header = rows[0];
   const days = [];
   for (let col = 1; col < header.length; col++) {
